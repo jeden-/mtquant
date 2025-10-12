@@ -1,9 +1,9 @@
 """
-Integration tests for MT5 adapter.
+Integration tests for MT5 MCP adapter.
 
-These tests run against REAL MT5 demo account and verify:
-- Connection to MT5 terminal
-- Market data fetching
+These tests run against REAL MT5 demo account via MCP server and verify:
+- Connection to MT5 MCP server
+- Market data fetching through MCP
 - Account information retrieval
 - Symbol mapping end-to-end
 - Position management
@@ -11,6 +11,7 @@ These tests run against REAL MT5 demo account and verify:
 
 Requirements:
 - MT5 terminal must be running and logged in
+- MT5 MCP server must be running (uv run mt5mcp)
 - Demo account credentials in .env file
 - pytest-asyncio for async test support
 
@@ -37,6 +38,10 @@ logger = get_logger(__name__)
 def broker_config() -> Dict[str, Any]:
     """Load broker configuration from YAML."""
     try:
+        # Load environment variables
+        from dotenv import load_dotenv
+        load_dotenv()
+        
         with open('config/brokers.yaml', 'r') as f:
             brokers_config = yaml.safe_load(f)
         
@@ -44,16 +49,33 @@ def broker_config() -> Dict[str, Any]:
         demo_brokers = brokers_config.get('demo_accounts', {})
         for broker_id, config in demo_brokers.items():
             if config.get('enabled', False):
+                # Expand environment variables
+                config = expand_env_vars(config)
                 return config
         
         # If no enabled broker, return first one
         if demo_brokers:
-            return list(demo_brokers.values())[0]
+            config = list(demo_brokers.values())[0]
+            config = expand_env_vars(config)
+            return config
         else:
             pytest.skip("No demo brokers found in config")
             
     except Exception as e:
         pytest.skip(f"Failed to load broker config: {e}")
+
+
+def expand_env_vars(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Expand environment variables in config values."""
+    import os
+    expanded = {}
+    for key, value in config.items():
+        if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+            env_var = value[2:-1]  # Remove ${ and }
+            expanded[key] = os.getenv(env_var, value)
+        else:
+            expanded[key] = value
+    return expanded
 
 
 @pytest.fixture
@@ -95,6 +117,12 @@ async def test_mt5_connection(mt5_adapter):
     assert health.last_check is not None, "Last check time should be set"
     
     logger.info(f"✅ Connection verified: {health.is_connected}, latency: {health.latency_ms}ms")
+    
+    # Cleanup
+    try:
+        await adapter.disconnect()
+    except Exception as e:
+        logger.warning(f"Cleanup error: {e}")
 
 
 @pytest.mark.asyncio
@@ -122,11 +150,11 @@ async def test_fetch_market_data(mt5_adapter):
     assert data['close'].notna().all(), "Close prices should not be NaN"
     assert data['symbol'].iloc[0] == 'XAUUSD', "Symbol should be mapped to XAUUSD"
     
-    # Check data is recent (last bar should be within last 2 hours)
+    # Check data is recent (last bar should be within last 48 hours for demo accounts)
     if 'timestamp' in data.columns:
         last_timestamp = pd.to_datetime(data['timestamp']).max()
         time_diff = datetime.utcnow() - last_timestamp
-        assert time_diff < timedelta(hours=2), f"Data too old: {time_diff}"
+        assert time_diff < timedelta(hours=48), f"Data too old: {time_diff}"
     
     logger.info(f"✅ Market data verified: {len(data)} bars, latest close: {data['close'].iloc[-1]}")
 

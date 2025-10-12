@@ -35,7 +35,7 @@ from datetime import datetime
 
 import pandas as pd
 from mtquant.mcp_integration.adapters.base_adapter import BrokerAdapter, HealthStatus
-from mtquant.mcp_integration.clients.mt5_client import MT5Client
+from mtquant.mcp_integration.clients.mt5_mcp_client import MT5MCPClient
 from mtquant.mcp_integration.managers.symbol_mapper import SymbolMapper
 from mtquant.mcp_integration.models.order import Order
 from mtquant.mcp_integration.models.position import Position
@@ -78,8 +78,8 @@ class MT5BrokerAdapter(BrokerAdapter):
         """
         super().__init__(broker_id, config)
         
-        # Initialize MT5 client
-        self.mt5_client = MT5Client(broker_id, config)
+        # Initialize MT5 MCP client
+        self.mt5_client = MT5MCPClient(broker_id, config)
         
         # Symbol mapper for standard <-> broker symbol conversion
         self.symbol_mapper = SymbolMapper
@@ -426,6 +426,15 @@ class MT5BrokerAdapter(BrokerAdapter):
             # Return position with broker symbol if mapping fails
             self.logger.warning(f"Symbol mapping failed for {mt5_position.symbol}")
             return mt5_position
+    
+    async def health_check(self) -> HealthStatus:
+        """
+        Check broker connection health.
+        
+        Returns:
+            HealthStatus object with connection details
+        """
+        return await self.mt5_client.get_health_status()
     
     def __repr__(self) -> str:
         """String representation of MT5BrokerAdapter."""

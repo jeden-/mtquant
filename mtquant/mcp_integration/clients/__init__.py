@@ -10,13 +10,18 @@ Key Features:
 - Message queuing and retry logic
 - Connection health monitoring
 - Protocol version negotiation
+
+CRITICAL: All clients use MCP protocol, NOT direct broker APIs.
 """
 
 __version__ = "0.1.0"
 
-from .mt5_client import MT5Client, HealthStatus
+from .mt5_mcp_client import MT5MCPClient, HealthStatus as MT5HealthStatus
+from .mt4_mcp_client import MT4MCPClient, HealthStatus as MT4HealthStatus
 
 __all__ = [
-    "MT5Client",
-    "HealthStatus",
+    "MT5MCPClient",
+    "MT4MCPClient", 
+    "MT5HealthStatus",
+    "MT4HealthStatus",
 ]

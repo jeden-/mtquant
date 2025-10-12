@@ -1,6 +1,18 @@
 ---
 alwaysApply: true
 ---
+
+## ⚠️ CRITICAL: MCP-Only Architecture
+
+**ABSOLUTE RULE: This project uses Model Context Protocol (MCP) for ALL broker communication.**
+
+- ❌ NEVER `import MetaTrader5` in application code
+- ✅ ALWAYS use MCP clients (MT5MCPClient, MT4MCPClient)  
+- ✅ ALL broker operations go through MCP protocol
+- ✅ MCP servers MUST be running before app starts
+
+**Violation of this rule = immediate code rejection**
+
 # MTQuant Project Rules
 
 ## 🎯 Project Context

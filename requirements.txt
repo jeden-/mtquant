@@ -9,7 +9,7 @@ pydantic-settings==2.1.0
 python-dotenv==1.0.0
 
 # RL/ML Stack
-finrl==0.3.6
+finrl==0.3.5
 stable-baselines3==2.2.1
 gymnasium==0.29.1
 torch==2.1.2
@@ -20,8 +20,11 @@ scikit-learn==1.3.2
 # Technical Analysis
 ta-lib==0.4.28
 
-# Broker Integration
-MetaTrader5==5.0.45
+# MCP Integration (CRITICAL)
+mcp==1.0.0
+anthropic==0.18.0
+
+# Broker Integration (for MCP servers)
 httpx==0.26.0
 websockets==12.0
 aiohttp==3.9.1
@@ -49,6 +52,7 @@ black==24.1.1
 ruff==0.1.14
 mypy==1.8.0
 ipython==8.19.0
+uv==0.1.15
 
 # Optional: QuestDB (install separately if using time-series DB)
 # questdb==1.1.0

@@ -1,0 +1,6 @@
+[submodule "mcp_servers/mt4/server"]
+	path = mcp_servers/mt4/server
+	url = https://github.com/8nite/metatrader-4-mcp.git
+[submodule "mcp_servers/mt5/server"]
+	path = mcp_servers/mt5/server
+	url = https://github.com/Qoyyuum/mcp-metatrader5-server.git

@@ -12,6 +12,7 @@ demo_accounts:
     description: "OANDA TMS MT5 Demo Account"
     is_demo: true
     enabled: true
+    mcp_server_path: "${MT5_MCP_SERVER_PATH}"  # Path to MCP server
     
   ic_markets_mt5:
     broker_id: "ic_markets"
@@ -22,16 +23,18 @@ demo_accounts:
     description: "IC Markets MT5 Demo Account"
     is_demo: true
     enabled: false  # Placeholder for future use
+    mcp_server_path: "${MT5_MCP_SERVER_PATH}"  # Path to MCP server
     
   generic_mt4:
     broker_id: "generic_mt4_demo"
     platform: "mt4"
     account: 99999999
     password: "${MT4_DEMO_PASSWORD}"
-    server: "Generic-Demo"
-    description: "Generic MT4 Demo Account (placeholder)"
+    server: "Longhorn-Demo"
+    description: "Longhorn MT4 Demo Account"
     is_demo: true
-    enabled: false  # Placeholder for future MT4 support
+    enabled: true  # Enabled for MT4 MCP testing
+    mcp_endpoint: "${MT4_MCP_SERVER_ENDPOINT}"  # HTTP endpoint for MCP server
 
 # Live accounts section (placeholders, will be populated later)
 live_accounts:
