@@ -214,6 +214,43 @@ class MT5Client:
             self._connected = False
             return False
     
+    async def get_health_status(self) -> HealthStatus:
+        """
+        Get detailed health status.
+        
+        Returns:
+            HealthStatus object with connection details
+        """
+        try:
+            import time
+            from mtquant.mcp_integration.adapters.base_adapter import HealthStatus
+            
+            start_time = time.time()
+            
+            # Check connection
+            is_connected = await self.health_check()
+            
+            # Calculate latency
+            latency_ms = (time.time() - start_time) * 1000
+            
+            # Create health status
+            health = HealthStatus(
+                is_connected=is_connected,
+                latency_ms=latency_ms,
+                last_check=datetime.utcnow(),
+                error=None if is_connected else "MT5 connection failed"
+            )
+            
+            return health
+            
+        except Exception as e:
+            return HealthStatus(
+                is_connected=False,
+                latency_ms=0.0,
+                last_check=datetime.utcnow(),
+                error=str(e)
+            )
+    
     async def get_symbols(self) -> List[str]:
         """
         Get list of available symbols from broker.

@@ -3,23 +3,23 @@
 
 # Demo accounts section (for testing)
 demo_accounts:
-  ic_markets_mt5:
-    broker_id: "ic_markets"
+  oanda_mt5:
+    broker_id: "oanda"
     platform: "mt5"
-    account: 12345678
+    account: 62675178
     password: "${MT5_DEMO_PASSWORD}"  # Reference environment variable
-    server: "ICMarkets-Demo"
-    description: "IC Markets MT5 Demo Account"
+    server: "OANDATMS-MT5"
+    description: "OANDA TMS MT5 Demo Account"
     is_demo: true
     enabled: true
     
-  exness_mt5:
-    broker_id: "exness"
+  ic_markets_mt5:
+    broker_id: "ic_markets"
     platform: "mt5"
     account: 87654321
     password: "${MT5_DEMO_PASSWORD}"
-    server: "Exness-Demo"
-    description: "Exness MT5 Demo Account"
+    server: "ICMarkets-Demo"
+    description: "IC Markets MT5 Demo Account"
     is_demo: true
     enabled: false  # Placeholder for future use
     
@@ -58,13 +58,13 @@ live_accounts:
     risk_level: "high"
 
 # Default broker selection
-default_broker: "ic_markets"
+default_broker: "oanda"
 
 # Broker failover configuration
 failover:
   enabled: true
-  primary: "ic_markets"
-  secondary: "exness"
+  primary: "oanda"
+  secondary: "ic_markets"
   tertiary: "generic_mt4"
   
   # Failover triggers
@@ -78,7 +78,7 @@ failover:
 broker_settings:
   mt5:
     # MT5-specific settings
-    terminal_path: "C:\\Program Files\\MetaTrader 5\\terminal64.exe"
+    terminal_path: "C:\\Program Files\\OANDA TMS MT5 Terminal\\terminal64.exe"
     data_path: "C:\\Users\\%USERNAME%\\AppData\\Roaming\\MetaQuotes\\Terminal\\"
     max_symbols: 1000
     max_history_bars: 10000

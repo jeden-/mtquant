@@ -14,7 +14,14 @@ load balancing, and symbol translation.
 __version__ = "0.1.0"
 
 from .symbol_mapper import SymbolMapper
+from .connection_pool import ConnectionPool, ConnectionStatus, AdapterInfo, ConnectionStats
+from .broker_manager import BrokerManager
 
 __all__ = [
     "SymbolMapper",
+    "ConnectionPool",
+    "ConnectionStatus",
+    "AdapterInfo", 
+    "ConnectionStats",
+    "BrokerManager",
 ]
