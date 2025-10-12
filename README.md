@@ -41,11 +41,44 @@ py -3.11 -m venv venv
 # Aktywuj środowisko (Windows PowerShell)
 .\venv\Scripts\Activate.ps1
 
-# Zainstaluj zależności
+# Zainstaluj zależności podstawowe
 pip install -r requirements.txt
+
+# Zainstaluj zależności deweloperskie (opcjonalnie)
+pip install -r requirements-dev.txt
 
 # Zainstaluj pakiet w trybie deweloperskim
 pip install -e .
+```
+
+#### Instalacja na Windows
+
+**TA-Lib Installation:**
+```powershell
+# Opcja 1: Użyj pre-compiled wheel (zalecane)
+pip install TA-Lib
+
+# Opcja 2: Jeśli powyższe nie działa, zainstaluj Visual Studio Build Tools
+# Pobierz z: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+# Zainstaluj "C++ build tools" workload
+pip install TA-Lib
+
+# Opcja 3: Użyj conda (alternatywnie)
+conda install -c conda-forge ta-lib
+```
+
+**MetaTrader5 Installation:**
+```powershell
+# Wymaga zainstalowanego MetaTrader 5
+# Pobierz z: https://www.metatrader5.com/en/download
+# Zainstaluj MT5, następnie:
+pip install MetaTrader5
+```
+
+**PostgreSQL Driver:**
+```powershell
+# Windows może wymagać dodatkowych zależności
+pip install psycopg[binary,pool]
 ```
 
 ### Konfiguracja

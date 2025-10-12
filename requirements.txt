@@ -2,76 +2,53 @@
 # Python 3.11+ required
 
 # Core Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
+fastapi[all]==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
 pydantic-settings==2.1.0
-
-# Reinforcement Learning
-stable-baselines3==2.2.1
-gymnasium==0.29.1
-finrl==0.3.6
-torch==2.1.1
-tensorboard==2.15.1
-
-# Data Processing
-pandas==2.1.4
-numpy==1.25.2
-scipy==1.11.4
-scikit-learn==1.3.2
-ta-lib==0.4.28
-
-# Database
-asyncpg==0.29.0
-psycopg2-binary==2.9.9
-redis==5.0.1
-questdb==0.2.0
-
-# HTTP Client
-httpx==0.25.2
-aiohttp==3.9.1
-
-# Configuration
-pyyaml==6.0.1
 python-dotenv==1.0.0
 
-# Logging and Monitoring
-structlog==23.2.0
-prometheus-client==0.19.0
+# RL/ML Stack
+finrl==0.3.6
+stable-baselines3==2.2.1
+gymnasium==0.29.1
+torch==2.1.2
+numpy==1.24.3
+pandas==2.0.3
+scikit-learn==1.3.2
+
+# Technical Analysis
+ta-lib==0.4.28
+
+# Broker Integration
+MetaTrader5==5.0.45
+httpx==0.26.0
+websockets==12.0
+aiohttp==3.9.1
+
+# Database Drivers
+psycopg[binary,pool]==3.1.18
+redis[hiredis]==5.0.1
+sqlalchemy[asyncio]==2.0.25
+
+# Utilities
+loguru==0.7.2
+pytz==2023.3
+pyyaml==6.0.1
+python-multipart==0.0.6
 
 # Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
+pytest==7.4.4
+pytest-asyncio==0.23.3
 pytest-cov==4.1.0
 pytest-mock==3.12.0
-httpx==0.25.2
-
-# Code Quality
-black==23.11.0
-ruff==0.1.6
-mypy==1.7.1
-pre-commit==3.6.0
+faker==22.0.0
 
 # Development Tools
-jupyter==1.0.0
-ipython==8.17.2
-rich==13.7.0
+black==24.1.1
+ruff==0.1.14
+mypy==1.8.0
+ipython==8.19.0
 
-# Security
-cryptography==41.0.8
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-
-# Time and Date
-python-dateutil==2.8.2
-pytz==2023.3
-
-# Async Utilities
-asyncio-mqtt==0.16.1
-aiofiles==23.2.1
-
-# Optional: Broker-specific dependencies
-# Uncomment as needed for specific brokers
-# oandapyV20==0.6.3
-# ibapi==10.19.1
-# alpaca-trade-api==3.1.1
+# Optional: QuestDB (install separately if using time-series DB)
+# questdb==1.1.0

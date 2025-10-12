@@ -15,6 +15,7 @@ based on market data and learned patterns.
 
 __version__ = "0.1.0"
 
-from .agent_manager import AgentManager
+# AgentManager will be imported here when implemented
+# from .agent_manager import AgentManager
 
-__all__ = ["AgentManager"]
+__all__ = []

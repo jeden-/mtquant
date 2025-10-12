@@ -1,0 +1,28 @@
+# MTQuant Development Dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# Include base requirements
+-r requirements.txt
+
+# Development Tools
+jupyter==1.0.0
+matplotlib==3.8.2
+seaborn==0.13.1
+plotly==5.18.0
+
+# Additional Development Utilities
+rich==13.7.0
+pre-commit==3.6.0
+jupyterlab==4.0.9
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# Performance Profiling
+memory-profiler==0.61.0
+line-profiler==4.1.1
+
+# Security Scanning
+bandit==1.7.5
+safety==2.3.5
