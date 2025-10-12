@@ -1,0 +1,215 @@
+# MTQuant Risk Management Configuration
+# Comprehensive risk management parameters for safe trading
+
+# Position Sizing Limits
+position_sizing:
+  max_position_size_pct: 0.10  # 10% of portfolio per position
+  max_position_size_adv_pct: 0.05  # 5% of Average Daily Volume
+  min_position_size: 0.01  # Minimum lot size
+  max_position_size: 100.0  # Maximum lot size
+  
+  # Position sizing methods
+  methods:
+    kelly:
+      enabled: true
+      fraction: 0.25  # Fractional Kelly (25% of full Kelly)
+      max_kelly_pct: 0.05  # Maximum 5% Kelly percentage
+      
+    fixed:
+      enabled: true
+      fixed_pct: 0.02  # 2% of portfolio per trade
+      
+    volatility:
+      enabled: true
+      risk_per_trade_pct: 0.02  # 2% risk per trade
+      atr_multiplier: 2.0  # ATR multiplier for stop loss
+
+# Portfolio Limits
+portfolio_limits:
+  max_total_exposure_pct: 1.50  # 150% gross exposure
+  max_sector_exposure_pct: 0.40  # 40% per asset class
+  max_correlation_threshold: 0.7  # Reduce positions if correlation > 0.7
+  
+  # Asset class limits
+  asset_class_limits:
+    forex: 0.60  # 60% max forex exposure
+    commodities: 0.30  # 30% max commodities exposure
+    crypto: 0.20  # 20% max crypto exposure
+    indices: 0.25  # 25% max indices exposure
+
+# Loss Limits
+loss_limits:
+  max_daily_loss_pct: 0.05  # 5% daily loss limit
+  max_weekly_loss_pct: 0.10  # 10% weekly loss limit
+  max_drawdown_pct: 0.20  # 20% maximum drawdown
+  max_monthly_loss_pct: 0.15  # 15% monthly loss limit
+  
+  # Loss tracking
+  loss_tracking:
+    daily_reset_time: "00:00"  # UTC time for daily reset
+    weekly_reset_day: "monday"  # Day of week for weekly reset
+    monthly_reset_day: 1  # Day of month for monthly reset
+
+# Circuit Breaker Levels
+circuit_breakers:
+  level_1:
+    loss_pct: 0.05  # 5% loss - warning alerts
+    action: "warning"
+    description: "Warning level - reduce position sizes"
+    
+  level_2:
+    loss_pct: 0.10  # 10% loss - reduce positions
+    action: "reduce"
+    description: "Reduction level - halt new positions, close risky positions"
+    
+  level_3:
+    loss_pct: 0.15  # 15% loss - halt all trading
+    action: "halt"
+    description: "Halt level - stop all trading, flatten all positions"
+    
+  # Circuit breaker recovery
+  recovery:
+    cooldown_hours: 24  # 24 hours cooldown after level 3
+    manual_reset_required: true  # Manual intervention required
+    notification_required: true  # Send alerts to administrators
+
+# Agent-Specific Limits
+agent_limits:
+  max_trades_per_day: 50  # Maximum trades per agent per day
+  max_holding_period_hours: 168  # 7 days maximum holding period
+  cooldown_after_loss_minutes: 30  # 30 minutes cooldown after loss
+  
+  # Agent risk parameters
+  max_consecutive_losses: 5  # Maximum consecutive losing trades
+  max_daily_trades: 20  # Maximum trades per day per agent
+  min_win_rate: 0.40  # Minimum 40% win rate required
+  
+  # Agent performance monitoring
+  performance_monitoring:
+    sharpe_ratio_threshold: 1.0  # Minimum Sharpe ratio
+    max_drawdown_threshold: 0.15  # Maximum drawdown threshold
+    min_profit_factor: 1.2  # Minimum profit factor
+
+# Pre-Trade Checks
+pre_trade_checks:
+  price_band_pct: 0.10  # ±10% from last known price
+  min_account_balance: 1000.0  # Minimum margin required (USD)
+  max_leverage: 50  # Maximum leverage (varies by instrument)
+  
+  # Price validation
+  price_validation:
+    max_price_deviation_pct: 0.05  # 5% max deviation from market
+    stale_price_minutes: 5  # Price older than 5 minutes is stale
+    price_source_validation: true  # Validate price source
+    
+  # Margin requirements
+  margin_requirements:
+    min_margin_ratio: 0.02  # Minimum 2% margin ratio
+    max_margin_usage_pct: 0.80  # Maximum 80% margin usage
+    margin_call_threshold: 0.90  # Margin call at 90% usage
+    
+  # Order validation
+  order_validation:
+    max_order_size: 100.0  # Maximum order size in lots
+    min_order_size: 0.01  # Minimum order size in lots
+    max_slippage_pct: 0.05  # Maximum 5% slippage allowed
+
+# Risk Monitoring
+risk_monitoring:
+  # Real-time monitoring
+  real_time:
+    enabled: true
+    check_interval_seconds: 5  # Check every 5 seconds
+    alert_threshold_pct: 0.03  # Alert at 3% loss
+    
+  # Position monitoring
+  position_monitoring:
+    max_position_age_hours: 168  # 7 days maximum
+    position_review_interval_hours: 4  # Review every 4 hours
+    auto_close_stale_positions: true  # Auto-close stale positions
+    
+  # Correlation monitoring
+  correlation_monitoring:
+    enabled: true
+    correlation_window_days: 30  # 30-day correlation window
+    high_correlation_threshold: 0.7  # High correlation threshold
+    correlation_check_interval_hours: 24  # Check daily
+
+# Emergency Procedures
+emergency_procedures:
+  # Emergency stop
+  emergency_stop:
+    enabled: true
+    trigger_conditions:
+      - "daily_loss > 10%"
+      - "system_error"
+      - "broker_disconnection"
+      - "data_feed_loss"
+    
+  # Position liquidation
+  position_liquidation:
+    enabled: true
+    liquidation_order: "fifo"  # First in, first out
+    max_liquidation_time_minutes: 30  # Maximum 30 minutes
+    
+  # System shutdown
+  system_shutdown:
+    enabled: true
+    shutdown_conditions:
+      - "level_3_circuit_breaker"
+      - "emergency_stop_triggered"
+      - "manual_shutdown_request"
+
+# Compliance and Audit
+compliance:
+  # Regulatory compliance
+  regulatory:
+    max_leverage_by_instrument:
+      forex: 50
+      commodities: 20
+      crypto: 10
+      indices: 20
+      
+  # Audit requirements
+  audit:
+    log_all_trades: true
+    log_all_decisions: true
+    log_all_risk_events: true
+    audit_retention_days: 2555  # 7 years retention
+    
+  # Reporting
+  reporting:
+    daily_report: true
+    weekly_report: true
+    monthly_report: true
+    risk_report_recipients: ["risk@mtquant.com"]
+
+# Risk Alerts
+risk_alerts:
+  # Alert channels
+  channels:
+    email:
+      enabled: true
+      recipients: ["alerts@mtquant.com"]
+      
+    discord:
+      enabled: true
+      webhook_url: "${DISCORD_WEBHOOK_URL}"
+      
+    sms:
+      enabled: false
+      phone_numbers: []
+      
+  # Alert levels
+  alert_levels:
+    info:
+      threshold_pct: 0.01  # 1% loss
+      channels: ["email"]
+      
+    warning:
+      threshold_pct: 0.03  # 3% loss
+      channels: ["email", "discord"]
+      
+    critical:
+      threshold_pct: 0.05  # 5% loss
+      channels: ["email", "discord", "sms"]
