@@ -138,10 +138,10 @@ python --version  # Should show: Python 3.11.9
 ```
 
 **Verification:**
-- [ ] Wszystkie foldery utworzone zgodnie ze strukturą
-- [ ] Wszystkie `__init__.py` files istnieją
-- [ ] `python --version` pokazuje 3.11.9
-- [ ] Git repository zainicjowany
+- [X] Wszystkie foldery utworzone zgodnie ze strukturą
+- [X] Wszystkie `__init__.py` files istnieją
+- [x] `python --version` pokazuje 3.11.9
+- [x] Git repository zainicjowany
 
 ---
 
@@ -233,11 +233,11 @@ python -c "import finrl; print('FinRL: OK')"
 ```
 
 **Verification:**
-- [ ] `requirements.txt` utworzony z wszystkimi packages
-- [ ] `requirements-dev.txt` utworzony
-- [ ] Wszystkie packages zainstalowane bez błędów
-- [ ] TA-Lib działa (jeśli problem - manual install .whl)
-- [ ] Kluczowe imports działają (MT5, SB3, FinRL)
+- [x] `requirements.txt` utworzony z wszystkimi packages
+- [x] `requirements-dev.txt` utworzony
+- [x] Wszystkie packages zainstalowane bez błędów
+- [x] TA-Lib działa (jeśli problem - manual install .whl)
+- [x] Kluczowe imports działają (MT5, SB3, FinRL)
 
 ---
 
@@ -407,12 +407,12 @@ notepad .env
 ```
 
 **Verification:**
-- [ ] `config/brokers.yaml` utworzony z demo configs
-- [ ] `config/symbols.yaml` utworzony z mappingami dla 8 instrumentów
-- [ ] `config/risk-limits.yaml` utworzony z wszystkimi limitami
-- [ ] `.env.example` utworzony jako template
+- [x] `config/brokers.yaml` utworzony z demo configs
+- [x] `config/symbols.yaml` utworzony z mappingami dla 8 instrumentów
+- [x] `config/risk-limits.yaml` utworzony z wszystkimi limitami
+- [x] `.env.example` utworzony jako template
 - [ ] `.env` utworzony i wypełniony PRAWDZIWYMI credentials demo
-- [ ] `.env` jest w `.gitignore` (nie commituj!)
+- [x] `.env` jest w `.gitignore` (nie commituj!)
 
 ---
 
@@ -556,12 +556,12 @@ Include example usage in docstring.
 ```
 
 **Verification:**
-- [ ] `exceptions.py` utworzony z hierarchią wyjątków
-- [ ] `order.py` utworzony z kompletnym Order modelem
-- [ ] `position.py` utworzony z Position modelem
-- [ ] `logger.py` utworzony z loguru setup
-- [ ] Wszystkie pliki mają type hints i docstrings
-- [ ] Import test: `from mtquant.utils.exceptions import MTQuantError`
+- [x] `exceptions.py` utworzony z hierarchią wyjątków
+- [x] `order.py` utworzony z kompletnym Order modelem
+- [x] `position.py` utworzony z Position modelem
+- [x] `logger.py` utworzony z loguru setup
+- [x] Wszystkie pliki mają type hints i docstrings
+- [x] Import test: `from mtquant.utils.exceptions import MTQuantError`
 
 ---
 
