@@ -14,5 +14,9 @@ Key Features:
 
 __version__ = "0.1.0"
 
-# Client classes will be imported here when implemented
-__all__ = []
+from .mt5_client import MT5Client, HealthStatus
+
+__all__ = [
+    "MT5Client",
+    "HealthStatus",
+]

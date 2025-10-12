@@ -16,5 +16,11 @@ All adapters implement the same interface for seamless broker switching.
 
 __version__ = "0.1.0"
 
-# Adapter classes will be imported here when implemented
-__all__ = []
+from .base_adapter import BrokerAdapter, HealthStatus
+from .mt5_adapter import MT5BrokerAdapter
+
+__all__ = [
+    "BrokerAdapter",
+    "HealthStatus", 
+    "MT5BrokerAdapter",
+]

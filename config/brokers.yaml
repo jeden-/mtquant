@@ -4,7 +4,7 @@
 # Demo accounts section (for testing)
 demo_accounts:
   ic_markets_mt5:
-    broker_id: "ic_markets_mt5_demo"
+    broker_id: "ic_markets"
     platform: "mt5"
     account: 12345678
     password: "${MT5_DEMO_PASSWORD}"  # Reference environment variable
@@ -14,7 +14,7 @@ demo_accounts:
     enabled: true
     
   exness_mt5:
-    broker_id: "exness_mt5_demo"
+    broker_id: "exness"
     platform: "mt5"
     account: 87654321
     password: "${MT5_DEMO_PASSWORD}"
@@ -58,14 +58,14 @@ live_accounts:
     risk_level: "high"
 
 # Default broker selection
-default_broker: "ic_markets_mt5_demo"
+default_broker: "ic_markets"
 
 # Broker failover configuration
 failover:
   enabled: true
-  primary: "ic_markets_mt5_demo"
-  secondary: "exness_mt5_demo"
-  tertiary: "generic_mt4_demo"
+  primary: "ic_markets"
+  secondary: "exness"
+  tertiary: "generic_mt4"
   
   # Failover triggers
   triggers:

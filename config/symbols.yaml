@@ -1,165 +1,91 @@
 # MTQuant Symbol Configuration
 # Defines trading instruments and their characteristics following SymbolMapper pattern
 
-# Symbol mapping between brokers - each standard symbol maps to broker-specific symbols
-symbol_mapping:
-  XAUUSD:
+# Each standard symbol contains metadata and broker-specific mappings
+XAUUSD:
+  instrument_type: "commodity"
+  pip_value: 0.01
+  typical_spread: 0.30
+  trading_hours: "24/5"
+  broker_mappings:
     ic_markets: "XAUUSD"
-    oanda: "XAU_USD"
+    oanda: "GOLD.pro"
     exness: "XAUUSDm"
     pepperstone: "XAUUSD"
-    instrument_type: "commodity"
-    pip_value: 0.01
-    typical_spread: 0.30
-    trading_hours: "24/5"
-    
-  BTCUSD:
+
+BTCUSD:
+  instrument_type: "crypto"
+  pip_value: 0.01
+  typical_spread: 5.0
+  trading_hours: "24/7"
+  broker_mappings:
     ic_markets: "BTCUSD"
     oanda: "BTC_USD"
     exness: "BTCUSDm"
     pepperstone: "BTCUSD"
-    instrument_type: "crypto"
-    pip_value: 0.01
-    typical_spread: 5.0
-    trading_hours: "24/7"
-    
-  USDJPY:
+
+USDJPY:
+  instrument_type: "forex"
+  pip_value: 0.01
+  typical_spread: 0.1
+  trading_hours: "24/5"
+  broker_mappings:
     ic_markets: "USDJPY"
     oanda: "USD_JPY"
     exness: "USDJPYm"
     pepperstone: "USDJPY"
-    instrument_type: "forex"
-    pip_value: 0.01
-    typical_spread: 0.1
-    trading_hours: "24/5"
-    
-  EURUSD:
+
+EURUSD:
+  instrument_type: "forex"
+  pip_value: 0.0001
+  typical_spread: 0.1
+  trading_hours: "24/5"
+  broker_mappings:
     ic_markets: "EURUSD"
     oanda: "EUR_USD"
     exness: "EURUSDm"
     pepperstone: "EURUSD"
-    instrument_type: "forex"
-    pip_value: 0.0001
-    typical_spread: 0.1
-    trading_hours: "24/5"
-    
-  GBPUSD:
+
+GBPUSD:
+  instrument_type: "forex"
+  pip_value: 0.0001
+  typical_spread: 0.15
+  trading_hours: "24/5"
+  broker_mappings:
     ic_markets: "GBPUSD"
     oanda: "GBP_USD"
     exness: "GBPUSDm"
     pepperstone: "GBPUSD"
-    instrument_type: "forex"
-    pip_value: 0.0001
-    typical_spread: 0.2
-    trading_hours: "24/5"
-    
-  SPX:
+
+SPX:
+  instrument_type: "index"
+  pip_value: 0.1
+  typical_spread: 0.5
+  trading_hours: "24/5"
+  broker_mappings:
     ic_markets: "US500"
     oanda: "SPX500_USD"
     exness: "US500m"
     pepperstone: "US500"
-    instrument_type: "index"
-    pip_value: 0.01
-    typical_spread: 0.5
-    trading_hours: "24/5"
-    
-  ETHUSD:
+
+ETHUSD:
+  instrument_type: "crypto"
+  pip_value: 0.01
+  typical_spread: 3.0
+  trading_hours: "24/7"
+  broker_mappings:
     ic_markets: "ETHUSD"
     oanda: "ETH_USD"
     exness: "ETHUSDm"
     pepperstone: "ETHUSD"
-    instrument_type: "crypto"
-    pip_value: 0.01
-    typical_spread: 3.0
-    trading_hours: "24/7"
-    
-  WTI:
+
+WTI:
+  instrument_type: "commodity"
+  pip_value: 0.01
+  typical_spread: 0.05
+  trading_hours: "24/5"
+  broker_mappings:
     ic_markets: "USOIL"
-    oanda: "WTICO_USD"
+    oanda: "OIL_USD"
     exness: "USOILm"
     pepperstone: "USOIL"
-    instrument_type: "commodity"
-    pip_value: 0.01
-    typical_spread: 0.05
-    trading_hours: "24/5"
-
-# Symbol groups for portfolio management
-symbol_groups:
-  majors:
-    - EURUSD
-    - USDJPY
-    - GBPUSD
-    
-  commodities:
-    - XAUUSD
-    - WTI
-    
-  crypto:
-    - BTCUSD
-    - ETHUSD
-    
-  indices:
-    - SPX
-    
-  safe_havens:
-    - XAUUSD
-    - USDJPY
-    
-  risk_on:
-    - BTCUSD
-    - ETHUSD
-    - SPX
-
-# Trading session definitions
-trading_sessions:
-  asian:
-    start: "00:00"
-    end: "09:00"
-    timezone: "UTC"
-    symbols: ["USDJPY"]
-    
-  london:
-    start: "08:00"
-    end: "17:00"
-    timezone: "UTC"
-    symbols: ["EURUSD", "GBPUSD"]
-    
-  new_york:
-    start: "13:00"
-    end: "22:00"
-    timezone: "UTC"
-    symbols: ["EURUSD", "USDJPY", "XAUUSD", "SPX"]
-    
-  overlap:
-    london_new_york:
-      start: "13:00"
-      end: "17:00"
-      timezone: "UTC"
-      symbols: ["EURUSD", "GBPUSD", "USDJPY"]
-      notes: "Highest liquidity period"
-
-# Risk parameters per symbol
-risk_parameters:
-  XAUUSD:
-    max_position_size: 0.15  # 15% of portfolio
-    max_daily_loss: 0.03     # 3% daily loss limit
-    stop_loss_atr_multiplier: 2.0
-    take_profit_atr_multiplier: 3.0
-    
-  BTCUSD:
-    max_position_size: 0.10  # 10% of portfolio
-    max_daily_loss: 0.05     # 5% daily loss limit
-    stop_loss_atr_multiplier: 1.5
-    take_profit_atr_multiplier: 2.5
-    
-  USDJPY:
-    max_position_size: 0.20  # 20% of portfolio
-    max_daily_loss: 0.02     # 2% daily loss limit
-    stop_loss_atr_multiplier: 2.5
-    take_profit_atr_multiplier: 4.0
-    
-  EURUSD:
-    max_position_size: 0.25  # 25% of portfolio
-    max_daily_loss: 0.02     # 2% daily loss limit
-    stop_loss_atr_multiplier: 2.0
-    take_profit_atr_multiplier: 3.0
