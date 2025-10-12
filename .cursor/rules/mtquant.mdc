@@ -1,0 +1,1181 @@
+---
+alwaysApply: true
+---
+# MTQuant Project Rules
+
+## 🎯 Project Context
+
+You are working on **MTQuant** - a production-grade multi-agent AI trading system using Reinforcement Learning.
+
+### Core Technologies
+- **Backend**: Python 3.11+, FastAPI, FinRL, Stable Baselines3
+- **Frontend**: React 18+, TypeScript, Tailwind CSS, TradingView Lightweight Charts
+- **Databases**: QuestDB (time-series), PostgreSQL (transactional), Redis (hot data)
+- **Broker Integration**: MetaTrader 4/5 via MCP (Model Context Protocol) servers
+- **Deployment**: Docker, docker-compose
+
+### System Architecture
+- **Multi-Agent**: Independent RL agents per instrument (XAUUSD, BTCUSD, USDJPY, EURUSD, etc.)
+- **Centralized Risk**: Risk Manager coordinates all agents, enforces portfolio-level limits
+- **Hybrid Design**: RL generates signals, rule-based systems handle position sizing & risk
+- **Production Focus**: Safety-first, regulatory-compliant, audit-ready
+
+### Target Use Cases
+- Live trading (primary), paper trading (validation), backtesting (development)
+- Day trading, swing trading, position trading (configurable per agent)
+- Multi-broker support (different brokers for MT4/MT5)
+
+---
+
+## 🚨 CRITICAL SAFETY REQUIREMENTS
+
+### Trading System Safety (HIGHEST PRIORITY)
+
+**NEVER execute trades without:**
+1. ✅ Pre-trade risk validation (capital, limits, price sanity)
+2. ✅ Position size calculation (Kelly Criterion, volatility-based, or fixed fractional)
+3. ✅ Stop-loss and take-profit defined
+4. ✅ Transaction cost inclusion (0.2-0.3% minimum)
+5. ✅ Audit logging (who, what, when, why)
+
+**Example pattern to ALWAYS follow:**
+```python
+async def execute_trade(order: Order) -> TradeResult:
+    """Execute trade with full safety checks.
+    
+    SAFETY CHECKLIST:
+    - Pre-trade validation ✓
+    - Position sizing ✓
+    - Risk limits ✓
+    - Audit logging ✓
+    """
+    # 1. Pre-trade validation
+    await pre_trade_checker.validate(order)
+    
+    # 2. Position sizing with risk consideration
+    position_size = position_sizer.calculate(
+        signal=order.signal,
+        portfolio_equity=portfolio.equity,
+        instrument_volatility=market_data.atr
+    )
+    
+    # 3. Risk checks
+    if not risk_manager.check_limits(position_size):
+        raise RiskViolationError("Position exceeds limits")
+    
+    # 4. Execute with error handling
+    try:
+        result = await broker.place_order(position_size)
+    except BrokerError as e:
+        logger.error(f"Order failed: {e}")
+        await alert_manager.send_critical_alert(e)
+        raise
+    finally:
+        # 5. Audit trail
+        await audit_logger.log_trade(order, result)
+    
+    return result
+```
+
+### Risk Management Rules
+- **Pre-trade checks**: Execute in <50ms
+  - Price bands validation (±5-10% from last known)
+  - Position size limits (<5% Average Daily Volume)
+  - Capital verification (sufficient margin available)
+  - Regulatory compliance (max leverage, instrument restrictions)
+
+- **Circuit breakers**: Three-tier automatic halt
+  - Level 1 (5% daily loss): Warning alerts, reduce position sizes
+  - Level 2 (10% daily loss): Halt new positions, close risky positions
+  - Level 3 (15-20% daily loss): Full trading halt, flatten all positions
+
+- **Portfolio limits**:
+  - Max total exposure: 120-150% gross exposure
+  - Max per instrument: 10-15% of portfolio
+  - Correlation monitoring: reduce positions if ρ > 0.7 between agents
+  - Max daily loss: 5% (configurable in risk-limits.yaml)
+
+### Error Handling Patterns
+
+**Broker Communication:**
+```python
+async def broker_operation() -> Result:
+    max_retries = 3
+    retry_delay = 1.0  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            result = await broker.execute_with_timeout(timeout=5.0)
+            return result
+            
+        except TimeoutError as e:
+            logger.warning(f"Broker timeout (attempt {attempt+1}/{max_retries}): {e}")
+            await asyncio.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+            
+        except ConnectionError as e:
+            logger.error(f"Broker connection lost: {e}")
+            await failover_to_backup_broker()
+            
+        except BrokerAPIError as e:
+            logger.error(f"Broker API error: {e}")
+            if e.is_retryable():
+                continue
+            else:
+                raise TradingError(f"Non-retryable error: {e}")
+    
+    raise TradingError(f"Failed after {max_retries} attempts")
+```
+
+---
+
+## 🏗️ Architecture Patterns
+
+### 1. Broker Integration Layer
+
+**Adapter Pattern (MANDATORY):**
+```python
+from abc import ABC, abstractmethod
+from typing import List, Dict, Optional
+
+class BrokerAdapter(ABC):
+    """Base adapter for all broker integrations."""
+    
+    @abstractmethod
+    async def connect(self) -> bool:
+        """Establish connection to broker."""
+        pass
+    
+    @abstractmethod
+    async def place_order(self, order: Order) -> str:
+        """Place order, return order_id."""
+        pass
+    
+    @abstractmethod
+    async def get_positions(self) -> List[Position]:
+        """Get current positions."""
+        pass
+    
+    @abstractmethod
+    async def get_market_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
+        """Fetch OHLCV data."""
+        pass
+    
+    @abstractmethod
+    async def health_check(self) -> HealthStatus:
+        """Check connection health."""
+        pass
+
+class MT5BrokerAdapter(BrokerAdapter):
+    """MT5 implementation via MCP server."""
+    
+    def __init__(self, broker_id: str, config: BrokerConfig):
+        self.broker_id = broker_id
+        self.mcp_client = MCPClient()
+        self.symbol_mapper = SymbolMapper
+        self._connection_pool = ConnectionPool()
+    
+    # Implementation...
+```
+
+**Symbol Mapping (centralized):**
+```python
+class SymbolMapper:
+    """Centralized symbol mapping: standard ↔ broker-specific."""
+    
+    SYMBOL_MAP = {
+        'XAUUSD': {
+            'oanda': 'GOLD.pro',
+            'ic_markets': 'XAUUSD',
+            'exness': 'XAUUSDm',
+        },
+        # ... complete mapping
+    }
+    
+    @classmethod
+    def to_broker_symbol(cls, standard: str, broker_id: str) -> str:
+        """Convert standard symbol to broker-specific."""
+        return cls.SYMBOL_MAP[standard][broker_id]
+    
+    @classmethod
+    def to_standard_symbol(cls, broker_symbol: str, broker_id: str) -> str:
+        """Reverse lookup: broker-specific → standard."""
+        for standard, mappings in cls.SYMBOL_MAP.items():
+            if mappings.get(broker_id) == broker_symbol:
+                return standard
+        raise SymbolNotFoundError(f"Unknown: {broker_symbol} @ {broker_id}")
+```
+
+### 2. RL Agent Structure
+
+**State Space Design:**
+```python
+class AgentState:
+    """RL agent state representation."""
+    
+    def __init__(self, market_data: pd.DataFrame, position: Position):
+        # ✅ CORRECT: Use log returns (stationary)
+        self.log_returns = np.log(market_data['close'] / market_data['close'].shift(1))
+        
+        # ✅ Normalized technical indicators
+        self.rsi = self._normalize(market_data['rsi'], 0, 100)
+        self.macd = self._normalize(market_data['macd'], -5, 5)
+        
+        # ✅ Position state
+        self.holdings = position.quantity / max_position_size
+        self.unrealized_pnl = position.unrealized_pnl / portfolio_equity
+        self.position_age = min(position.duration_hours / 24, 1.0)  # Normalize to 0-1
+        
+        # ✅ Risk metrics
+        self.portfolio_volatility = portfolio.rolling_volatility(20)
+        self.current_drawdown = portfolio.drawdown_pct
+        
+        # ❌ NEVER use raw prices (non-stationary)
+        # self.price = market_data['close']  # DON'T DO THIS!
+    
+    def _normalize(self, values: pd.Series, min_val: float, max_val: float) -> np.ndarray:
+        """Min-max normalization to 0-1 range."""
+        return (values - min_val) / (max_val - min_val)
+```
+
+**Reward Function:**
+```python
+def calculate_reward(
+    returns: float,
+    risk_free_rate: float,
+    downside_volatility: float,
+    transaction_cost: float
+) -> float:
+    """Risk-adjusted reward (Sortino ratio - transaction costs).
+    
+    ✅ Penalizes only downside volatility (better than Sharpe)
+    ✅ Includes transaction costs (realistic)
+    ✅ Encourages risk-adjusted returns
+    """
+    # Sortino ratio (downside risk only)
+    sortino = (returns - risk_free_rate) / downside_volatility
+    
+    # Transaction cost penalty
+    cost_penalty = transaction_cost * 100  # Scale up to be meaningful
+    
+    return sortino - cost_penalty
+```
+
+**Agent Lifecycle:**
+```python
+class TradingAgent:
+    """Single instrument RL trading agent."""
+    
+    def __init__(self, symbol: str, config: AgentConfig):
+        self.symbol = symbol
+        self.rl_model = self._load_or_create_model(config)
+        self.position_sizer = PositionSizer(config.position_sizing)
+        self.state = AgentState.INITIALIZED
+    
+    async def train(self, historical_data: pd.DataFrame, episodes: int = 1000):
+        """Offline training on historical data."""
+        env = TradingEnv(historical_data, self.symbol)
+        self.rl_model.learn(total_timesteps=episodes * len(historical_data))
+        self.state = AgentState.TRAINED
+    
+    async def validate_paper_trading(self, duration_days: int = 30):
+        """Paper trading validation (NO real money)."""
+        self.state = AgentState.PAPER_TRADING
+        # Paper trading logic...
+    
+    async def deploy_live(self, initial_capital_pct: float = 0.10):
+        """Live deployment (start with 10% capital)."""
+        if self.state != AgentState.PAPER_VALIDATED:
+            raise ValueError("Must complete paper trading first")
+        self.state = AgentState.LIVE
+        # Gradual capital increase logic...
+```
+
+### 3. Risk Management Architecture
+
+**Multi-layered Defense:**
+```python
+class RiskManager:
+    """Three-tier risk management."""
+    
+    def __init__(self):
+        self.pre_trade_checker = PreTradeChecker()
+        self.intra_trade_monitor = IntraTradeMonitor()
+        self.portfolio_controller = PortfolioController()
+        self.circuit_breaker = CircuitBreaker()
+    
+    async def validate_trade(self, order: Order) -> ValidationResult:
+        """Layer 1: Pre-trade checks (<50ms)."""
+        checks = [
+            self.pre_trade_checker.validate_price(order.price),
+            self.pre_trade_checker.validate_position_size(order.quantity),
+            self.pre_trade_checker.validate_capital(order.required_margin),
+            self.pre_trade_checker.validate_regulatory(order),
+        ]
+        return all(checks)
+    
+    async def monitor_positions(self):
+        """Layer 2: Intra-trade monitoring (continuous)."""
+        while True:
+            positions = await self.get_all_positions()
+            
+            for position in positions:
+                # Dynamic stop-loss adjustment
+                await self.intra_trade_monitor.adjust_stops(position)
+                
+                # P&L tracking
+                if position.unrealized_pnl_pct < -2.0:
+                    await self.alert_manager.warn(f"Position down 2%: {position}")
+            
+            # Correlation monitoring
+            correlations = self.calculate_position_correlations(positions)
+            if any(corr > 0.7 for corr in correlations):
+                await self.reduce_correlated_positions()
+            
+            await asyncio.sleep(5)  # 5-second monitoring interval
+    
+    async def check_circuit_breakers(self, daily_pnl_pct: float):
+        """Layer 3: Portfolio-level circuit breakers."""
+        if daily_pnl_pct <= -5.0:
+            await self.circuit_breaker.level_1_activate()  # Warn
+        if daily_pnl_pct <= -10.0:
+            await self.circuit_breaker.level_2_activate()  # Reduce
+        if daily_pnl_pct <= -15.0:
+            await self.circuit_breaker.level_3_activate()  # HALT ALL
+```
+
+---
+
+## 💻 Code Standards
+
+### Python (Backend)
+
+**Type Hints (MANDATORY):**
+```python
+from typing import Optional, List, Dict, Union, Literal
+from dataclasses import dataclass
+from datetime import datetime
+
+# ✅ Use Python 3.11+ union syntax
+def process_order(order: Order | None) -> str | None:
+    pass
+
+# ✅ Use Literal for string enums
+OrderSide = Literal['buy', 'sell']
+OrderType = Literal['market', 'limit', 'stop']
+
+# ✅ Dataclasses for models
+@dataclass
+class Position:
+    symbol: str
+    quantity: float
+    entry_price: float
+    current_price: float
+    unrealized_pnl: float
+    opened_at: datetime
+    agent_id: str
+    
+    @property
+    def unrealized_pnl_pct(self) -> float:
+        return (self.current_price - self.entry_price) / self.entry_price
+```
+
+**Async/Await (I/O Operations):**
+```python
+# ✅ Async for I/O
+async def fetch_market_data(symbol: str) -> pd.DataFrame:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"/api/market/{symbol}")
+        return pd.DataFrame(response.json())
+
+# ✅ Async database operations
+async def save_trade(trade: Trade):
+    async with db_pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO trades (symbol, quantity, price) VALUES ($1, $2, $3)",
+            trade.symbol, trade.quantity, trade.price
+        )
+
+# ❌ DON'T block event loop
+def bad_fetch():
+    response = requests.get("...")  # Blocking!
+    return response.json()
+```
+
+**Docstrings (Google Style):**
+```python
+def calculate_position_size(
+    signal: float,
+    portfolio_equity: float,
+    instrument_volatility: float,
+    method: Literal['kelly', 'fixed', 'volatility'] = 'kelly'
+) -> float:
+    """Calculate position size using specified method.
+    
+    Args:
+        signal: RL model output (-1 to 1, where 0=flat, positive=long, negative=short)
+        portfolio_equity: Total portfolio value in USD
+        instrument_volatility: ATR or realized volatility
+        method: Position sizing method to use
+        
+    Returns:
+        Position size in lots (fractional allowed)
+        
+    Raises:
+        ValueError: If signal is outside valid range
+        RiskViolationError: If calculated size exceeds limits
+        
+    Example:
+        >>> size = calculate_position_size(signal=0.7, portfolio_equity=50000, 
+        ...                                 instrument_volatility=20.5, method='kelly')
+        >>> print(f"Position size: {size:.2f} lots")
+    """
+    if not -1 <= signal <= 1:
+        raise ValueError(f"Signal must be -1 to 1, got {signal}")
+    
+    if method == 'kelly':
+        # Kelly Criterion implementation
+        pass
+    # ...
+```
+
+**Error Handling:**
+```python
+# Define custom exceptions
+class MTQuantError(Exception):
+    """Base exception for MTQuant."""
+    pass
+
+class BrokerError(MTQuantError):
+    """Broker communication error."""
+    pass
+
+class RiskViolationError(MTQuantError):
+    """Risk limit violation."""
+    pass
+
+class TradingError(MTQuantError):
+    """General trading error."""
+    pass
+
+# Use specific exceptions
+async def execute_order(order: Order):
+    try:
+        result = await broker.send_order(order)
+    except ConnectionError as e:
+        raise BrokerError(f"Connection failed: {e}") from e
+    except ValueError as e:
+        raise RiskViolationError(f"Invalid order: {e}") from e
+    except Exception as e:
+        logger.exception("Unexpected error in execute_order")
+        raise TradingError(f"Order execution failed: {e}") from e
+```
+
+### TypeScript (Frontend)
+
+**Type Safety:**
+```typescript
+// ✅ Define interfaces for all data structures
+interface Agent {
+  id: string;
+  symbol: string;
+  status: 'training' | 'paper' | 'live' | 'paused' | 'error';
+  currentPosition: Position | null;
+  unrealizedPnl: number;
+  todayTrades: number;
+}
+
+interface Position {
+  symbol: string;
+  side: 'long' | 'short';
+  quantity: number;
+  entryPrice: number;
+  currentPrice: number;
+  unrealizedPnl: number;
+  unrealizedPnlPct: number;
+}
+
+// ✅ Use const assertions for literal types
+const TRADING_STYLES = ['scalper', 'day_trader', 'swing_trader', 'position_trader'] as const;
+type TradingStyle = typeof TRADING_STYLES[number];
+
+// ✅ Generic hooks with proper typing
+function useWebSocket<T>(url: string): {
+  data: T | null;
+  isConnected: boolean;
+  error: Error | null;
+} {
+  // Implementation
+}
+```
+
+**React Patterns:**
+```typescript
+// ✅ Use hooks, avoid class components
+const AgentCard: React.FC<{ agent: Agent }> = ({ agent }) => {
+  const { data: marketData } = useMarketData(agent.symbol);
+  const { mutate: pauseAgent } = usePauseAgent();
+  
+  return (
+    <div className="rounded-lg bg-gray-800 p-4">
+      {/* Component JSX */}
+    </div>
+  );
+};
+
+// ✅ Custom hooks for logic reuse
+function useAgentPerformance(agentId: string) {
+  const { data } = useQuery(['agent-performance', agentId], () =>
+    api.getAgentPerformance(agentId)
+  );
+  
+  return {
+    sharpeRatio: data?.sharpe_ratio,
+    winRate: data?.win_rate,
+    totalTrades: data?.total_trades,
+  };
+}
+```
+
+---
+
+## 🗄️ Database Patterns
+
+### QuestDB (Time-Series)
+```sql
+-- ✅ Designated timestamp, partitioned, symbols cached
+CREATE TABLE ohlcv_1m (
+    timestamp TIMESTAMP,
+    symbol SYMBOL CAPACITY 1000 CACHE,
+    exchange SYMBOL CAPACITY 50 CACHE,
+    open DOUBLE,
+    high DOUBLE,
+    low DOUBLE,
+    close DOUBLE,
+    volume DOUBLE,
+    vwap DOUBLE
+) TIMESTAMP(timestamp) PARTITION BY DAY;
+
+-- ✅ Use ASOF JOIN for time-series matching
+SELECT 
+    t.timestamp,
+    t.symbol,
+    t.close,
+    i.rsi,
+    i.macd
+FROM ohlcv_1m t
+ASOF JOIN indicators_1m i ON (symbol, timestamp);
+```
+
+**Python Client:**
+```python
+async def fetch_ohlcv(
+    symbol: str,
+    start: datetime,
+    end: datetime,
+    timeframe: str = '1m'
+) -> pd.DataFrame:
+    """Fetch OHLCV data from QuestDB."""
+    async with questdb_pool.acquire() as conn:
+        query = f"""
+            SELECT timestamp, open, high, low, close, volume
+            FROM ohlcv_{timeframe}
+            WHERE symbol = $1 AND timestamp >= $2 AND timestamp < $3
+            ORDER BY timestamp ASC
+        """
+        rows = await conn.fetch(query, symbol, start, end)
+        return pd.DataFrame(rows)
+```
+
+### PostgreSQL (Transactional)
+```sql
+-- ✅ Proper constraints, indexes, audit columns
+CREATE TABLE orders (
+    order_id BIGSERIAL PRIMARY KEY,
+    agent_id VARCHAR(50) NOT NULL,
+    symbol VARCHAR(20) NOT NULL,
+    side VARCHAR(4) NOT NULL CHECK (side IN ('buy', 'sell')),
+    order_type VARCHAR(20) NOT NULL,
+    quantity DECIMAL(18, 8) NOT NULL,
+    price DECIMAL(18, 8),
+    status VARCHAR(20) NOT NULL,
+    broker_order_id VARCHAR(100),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by VARCHAR(100) NOT NULL
+);
+
+CREATE INDEX idx_orders_agent_symbol ON orders(agent_id, symbol);
+CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
+
+-- ✅ Use JSONB for flexible data
+CREATE TABLE agent_config (
+    agent_id VARCHAR(50) PRIMARY KEY,
+    config JSONB NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_agent_config_jsonb ON agent_config USING GIN(config);
+```
+
+**Always use parameterized queries:**
+```python
+# ✅ Safe from SQL injection
+async def get_agent_orders(agent_id: str, limit: int = 100):
+    query = """
+        SELECT * FROM orders 
+        WHERE agent_id = $1 
+        ORDER BY created_at DESC 
+        LIMIT $2
+    """
+    return await db.fetch(query, agent_id, limit)
+
+# ❌ NEVER do this (SQL injection risk)
+async def bad_query(agent_id: str):
+    query = f"SELECT * FROM orders WHERE agent_id = '{agent_id}'"  # DANGEROUS!
+    return await db.fetch(query)
+```
+
+### Redis (Hot Data)
+```python
+# ✅ Use for caching latest prices (TTL 60s)
+async def cache_latest_price(symbol: str, price: float):
+    await redis.setex(f"price:{symbol}", 60, str(price))
+
+# ✅ Circular replay buffer with Sorted Sets
+async def add_experience(agent_id: str, experience: dict):
+    score = time.time()  # Use timestamp as score
+    await redis.zadd(
+        f"replay:{agent_id}", 
+        {json.dumps(experience): score}
+    )
+    # Keep only latest 100K experiences
+    await redis.zremrangebyrank(f"replay:{agent_id}", 0, -100001)
+
+# ✅ Prioritized experience replay
+async def sample_experiences(agent_id: str, batch_size: int = 32):
+    # Get high-priority experiences (recent or high TD-error)
+    experiences = await redis.zrevrange(
+        f"replay:{agent_id}", 
+        0, 
+        batch_size - 1
+    )
+    return [json.loads(exp) for exp in experiences]
+```
+
+---
+
+## 🧪 Testing Requirements
+
+### Unit Tests (pytest)
+```python
+import pytest
+from unittest.mock import AsyncMock, patch
+from mtquant.agents import TradingAgent
+from mtquant.risk import RiskManager
+
+@pytest.fixture
+async def mock_broker():
+    broker = AsyncMock()
+    broker.place_order.return_value = "ORDER123"
+    return broker
+
+@pytest.mark.asyncio
+async def test_agent_validates_risk_before_trade(mock_broker):
+    """Agent must validate risk before executing trade."""
+    agent = TradingAgent(symbol="XAUUSD", broker=mock_broker)
+    
+    # Mock risk violation
+    with patch.object(agent.risk_manager, 'validate', return_value=False):
+        with pytest.raises(RiskViolationError):
+            await agent.execute_trade(signal=0.8)
+    
+    # Broker should NOT be called if risk check fails
+    mock_broker.place_order.assert_not_called()
+
+def test_position_sizer_respects_limits():
+    """Position sizer must enforce max position limits."""
+    sizer = PositionSizer(max_position_pct=0.10)
+    
+    size = sizer.calculate(
+        signal=0.9,
+        portfolio_equity=100000,
+        method='fixed'
+    )
+    
+    # Should not exceed 10% of portfolio
+    assert size <= 10000
+```
+
+### Integration Tests
+```python
+@pytest.mark.integration
+async def test_mt5_broker_connection():
+    """Test real MT5 connection (demo account)."""
+    adapter = MT5BrokerAdapter(broker_id="demo", config=demo_config)
+    
+    # Should connect successfully
+    connected = await adapter.connect()
+    assert connected is True
+    
+    # Should fetch market data
+    data = await adapter.get_market_data("XAUUSD", "1H")
+    assert len(data) > 0
+    assert 'close' in data.columns
+    
+    # Cleanup
+    await adapter.disconnect()
+
+@pytest.mark.integration
+async def test_questdb_ohlcv_storage():
+    """Test QuestDB OHLCV ingestion and retrieval."""
+    # Insert test data
+    await questdb.insert_ohlcv([
+        {'timestamp': '2024-01-01T00:00:00', 'symbol': 'XAUUSD', 'close': 2050.5}
+    ])
+    
+    # Retrieve and verify
+    data = await questdb.fetch_ohlcv('XAUUSD', start='2024-01-01', end='2024-01-02')
+    assert len(data) > 0
+    assert data.iloc[0]['close'] == 2050.5
+```
+
+**Coverage Requirements:**
+- Minimum 70% overall coverage
+- 100% coverage for risk management code
+- 90%+ coverage for trading logic
+- Run: `pytest --cov=mtquant --cov-report=html`
+
+---
+
+## 🔒 Security & Compliance
+
+### Credential Management
+```python
+# ✅ Use environment variables
+import os
+from pydantic import BaseSettings
+
+class Settings(BaseSettings):
+    mt5_account: int
+    mt5_password: str
+    mt5_server: str
+    questdb_host: str
+    questdb_password: str
+    
+    class Config:
+        env_file = '.env'
+        env_file_encoding = 'utf-8'
+
+settings = Settings()
+
+# ✅ .env file (NEVER commit to git)
+MT5_ACCOUNT=12345678
+MT5_PASSWORD=secret123
+MT5_SERVER=ICMarkets-Demo
+QUESTDB_HOST=localhost
+QUESTDB_PASSWORD=quest
+
+# ✅ Add to .gitignore
+.env
+.env.*
+*.pem
+*.key
+secrets/
+```
+
+### Audit Logging
+```python
+class AuditLogger:
+    """Comprehensive audit trail for regulatory compliance."""
+    
+    async def log_trade(self, order: Order, result: TradeResult, user: str = "system"):
+        """Log every trade decision."""
+        await db.execute("""
+            INSERT INTO audit_log (
+                event_type, user_id, agent_id, symbol,
+                action, details, timestamp
+            ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        """, 
+            'TRADE_EXECUTED', user, order.agent_id, order.symbol,
+            f"{order.side} {order.quantity} @ {order.price}",
+            json.dumps({
+                'order': order.dict(),
+                'result': result.dict(),
+                'broker': result.broker_id
+            })
+        )
+    
+    async def log_risk_event(self, event_type: str, details: dict):
+        """Log risk limit changes, circuit breaker activations."""
+        await db.execute("""
+            INSERT INTO audit_log (event_type, details, timestamp)
+            VALUES ($1, $2, NOW())
+        """, event_type, json.dumps(details))
+```
+
+**Retention Policy:**
+- Trade records: 2 years PostgreSQL → 5 years archive → 7 years Glacier
+- Audit logs: 5 years (regulatory requirement)
+- Model checkpoints: 1 year active, 3 years archive
+- Market data: 90 days hot (QuestDB), 2 years warm (S3), 10 years cold (Glacier)
+
+---
+
+## 📊 Domain Knowledge
+
+### Instrument Characteristics
+```python
+INSTRUMENT_SPECS = {
+    'XAUUSD': {
+        'type': 'commodity',
+        'pip_value': 0.01,
+        'typical_spread': 0.30,
+        'session': '24/5',
+        'avg_daily_range': 20.0,  # USD
+        'correlation': {'USDJPY': -0.3, 'DXY': -0.7},  # Negative correlation with USD
+        'notes': 'Safe-haven asset, reacts to geopolitical events, USD strength'
+    },
+    'BTCUSD': {
+        'type': 'crypto',
+        'pip_value': 0.01,
+        'typical_spread': 5.0,
+        'session': '24/7',
+        'avg_daily_range': 1000.0,  # USD
+        'correlation': {},  # Low correlation with traditional assets
+        'notes': 'High volatility, >95% algorithmic trading, weekend gaps'
+    },
+    'USDJPY': {
+        'type': 'forex',
+        'pip_value': 0.01,
+        'typical_spread': 0.1,
+        'session': '24/5',
+        'avg_daily_range': 0.80,  # %
+        'correlation': {'XAUUSD': -0.3, 'SPX': 0.2},
+        'notes': 'Carry trade favorite, Asian session liquidity, safe-haven in risk-off'
+    },
+    'EURUSD': {
+        'type': 'forex',
+        'pip_value': 0.0001,
+        'typical_spread': 0.1,
+        'session': '24/5',
+        'avg_daily_range': 0.70,  # %
+        'correlation': {'DXY': -0.9},
+        'notes': 'Highest forex liquidity (28% global volume), EUR/USD sentiment'
+    },
+    # ... other instruments
+}
+```
+
+### Trading Concepts
+
+**Position Sizing Methods:**
+```python
+class PositionSizer:
+    """Multiple position sizing strategies."""
+    
+    def kelly_criterion(self, win_rate: float, avg_win: float, avg_loss: float) -> float:
+        """Kelly % = (win_rate * avg_win - (1-win_rate) * avg_loss) / avg_loss"""
+        kelly_pct = (win_rate * avg_win - (1 - win_rate) * avg_loss) / avg_loss
+        # Use fractional Kelly (0.25x) for safety
+        return kelly_pct * 0.25
+    
+    def volatility_based(self, atr: float, risk_per_trade: float = 0.02) -> float:
+        """Position = (Risk% * Portfolio) / (ATR * Multiplier)"""
+        return (risk_per_trade * self.portfolio_equity) / (atr * 2.0)
+    
+    def fixed_fractional(self, fraction: float = 0.02) -> float:
+        """Fixed % of portfolio per trade."""
+        return self.portfolio_equity * fraction
+```
+
+**Stop-Loss Strategies:**
+- **ATR-based**: SL = Entry ± (ATR × 2.0) - adapts to volatility
+- **Fixed %**: SL = Entry ± 2% - simple, predictable
+- **Trailing**: SL follows price at distance (e.g., -20 pips from high)
+
+**Take-Profit Strategies:**
+- **Risk:Reward ratio**: TP = Entry + (SL_distance × 2.0) for 1:2 R:R
+- **Technical levels**: TP at support/resistance, Fibonacci levels
+- **Time-based**: Close after X hours/days (swing trading)
+
+---
+
+## ⚠️ Common Pitfalls to Avoid
+
+### RL/ML Pitfalls
+```python
+# ❌ DON'T: Use raw prices (non-stationary)
+state = market_data['close'].values
+
+# ✅ DO: Use log returns (stationary)
+state = np.log(market_data['close'] / market_data['close'].shift(1)).values
+
+# ❌ DON'T: Profit-only rewards (encourages overtrading)
+reward = portfolio.total_pnl
+
+# ✅ DO: Risk-adjusted rewards with transaction costs
+reward = (returns - rf_rate) / downside_vol - transaction_cost * 0.003
+
+# ❌ DON'T: Ignore transaction costs in backtests
+backtest_return = sum(trades.pnl)
+
+# ✅ DO: Always include realistic costs (0.2-0.3% per trade)
+backtest_return = sum(trades.pnl) - sum(trades.quantity * 0.003)
+
+# ❌ DON'T: Look-ahead bias (using future data)
+features = data[['close', 'sma_20']]  # If SMA calculated on full dataset
+
+# ✅ DO: Calculate indicators progressively
+features = data.rolling(20).mean()  # Only uses past data
+```
+
+### Trading System Pitfalls
+```python
+# ❌ DON'T: Execute without validation
+await broker.place_order(order)
+
+# ✅ DO: Always validate first
+if await risk_manager.validate(order):
+    await broker.place_order(order)
+else:
+    raise RiskViolationError("Order rejected by risk checks")
+
+# ❌ DON'T: Single point of failure
+broker = MT5Broker(config)
+
+# ✅ DO: Backup brokers with failover
+primary = MT5Broker(config_primary)
+backup = MT5Broker(config_backup)
+if not await primary.health_check():
+    await failover_to(backup)
+
+# ❌ DON'T: Synchronous broker calls (blocks event loop)
+data = broker.get_market_data(symbol)
+
+# ✅ DO: Async with timeout
+data = await asyncio.wait_for(
+    broker.get_market_data(symbol),
+    timeout=5.0
+)
+
+# ❌ DON'T: Magic numbers in code
+if position_size > 10000:
+    raise ValueError("Too large")
+
+# ✅ DO: Configuration files
+max_position = config['risk_limits']['max_position_size']
+if position_size > max_position:
+    raise RiskViolationError(f"Exceeds max: {max_position}")
+```
+
+### Database Pitfalls
+```python
+# ❌ DON'T: String formatting (SQL injection risk)
+query = f"SELECT * FROM orders WHERE agent_id = '{agent_id}'"
+
+# ✅ DO: Parameterized queries
+query = "SELECT * FROM orders WHERE agent_id = $1"
+await db.fetch(query, agent_id)
+
+# ❌ DON'T: Fetch all data into memory
+all_data = await db.fetch("SELECT * FROM ohlcv_1m")  # Could be millions of rows!
+
+# ✅ DO: Use pagination or streaming
+async for batch in db.fetch_stream("SELECT * FROM ohlcv_1m", batch_size=10000):
+    process(batch)
+
+# ❌ DON'T: N+1 queries
+for agent in agents:
+    performance = await db.fetch("SELECT * FROM performance WHERE agent_id = $1", agent.id)
+
+# ✅ DO: Batch queries
+agent_ids = [a.id for a in agents]
+performances = await db.fetch("SELECT * FROM performance WHERE agent_id = ANY($1)", agent_ids)
+```
+
+---
+
+## 📁 File Structure Awareness
+
+When suggesting code locations, use this structure:
+
+```
+mtquant/
+├── mtquant/                    # Main package
+│   ├── __init__.py
+│   ├── agents/                 # RL agents
+│   │   ├── environments/       # Trading environments
+│   │   ├── policies/           # RL algorithms (PPO, SAC, TD3)
+│   │   ├── training/           # Training scripts
+│   │   └── agent_manager.py   # Agent lifecycle management
+│   ├── mcp_integration/        # Broker integration
+│   │   ├── clients/            # MCP clients (MT4, MT5)
+│   │   ├── adapters/           # Broker adapters
+│   │   └── managers/           # Connection pool, symbol mapper
+│   ├── risk_management/        # Risk & position sizing
+│   │   ├── pre_trade_checker.py
+│   │   ├── position_sizer.py
+│   │   ├── circuit_breaker.py
+│   │   └── portfolio_aggregator.py
+│   ├── data/                   # Data layer
+│   │   ├── fetchers/           # Data sources
+│   │   ├── processors/         # Feature engineering
+│   │   └── storage/            # DB clients (QuestDB, PostgreSQL, Redis)
+│   └── utils/                  # Shared utilities
+├── api/                        # FastAPI backend
+│   ├── routes/                 # API endpoints
+│   ├── models/                 # Pydantic schemas
+│   └── main.py                 # FastAPI app
+├── frontend/                   # React frontend
+│   ├── src/
+│   │   ├── components/         # React components
+│   │   ├── hooks/              # Custom hooks
+│   │   ├── services/           # API clients
+│   │   └── store/              # State management
+│   └── package.json
+├── config/                     # Configuration files
+│   ├── brokers.yaml
+│   ├── symbols.yaml
+│   ├── agents.yaml
+│   └── risk-limits.yaml
+├── tests/                      # Test suite
+│   ├── unit/
+│   ├── integration/
+│   └── conftest.py
+├── scripts/                    # Utility scripts
+│   ├── deploy.sh
+│   ├── backup.sh
+│   └── paper_trade.py
+├── docker/                     # Docker configs
+│   ├── Dockerfile.backend
+│   ├── Dockerfile.frontend
+│   └── docker-compose.yml
+├── .cursorrules                # This file!
+├── .env.example                # Environment variables template
+├── .gitignore
+├── requirements.txt
+├── setup.py
+└── README.md
+```
+
+**Placement Guidelines:**
+- Trading logic → `mtquant/agents/`
+- Broker communication → `mtquant/mcp_integration/`
+- Risk checks → `mtquant/risk_management/`
+- API endpoints → `api/routes/`
+- React components → `frontend/src/components/`
+- Config → `config/*.yaml` (never hardcode!)
+
+---
+
+## 🎯 When Suggesting Code
+
+**Always consider:**
+1. ✅ **Safety implications** - Is this safe for live trading with real money?
+2. ✅ **Error handling** - What if broker connection fails? Database is down?
+3. ✅ **Type hints** - Are all parameters and returns properly typed?
+4. ✅ **Logging** - Will we know what happened if something goes wrong?
+5. ✅ **Testing** - How can this be tested? Suggest test cases.
+6. ✅ **Performance** - Is this async where needed? Will it scale?
+7. ✅ **Security** - Any credential exposure? SQL injection risks?
+8. ✅ **Compliance** - Does this maintain audit trail? Regulatory requirements?
+
+**Ask clarifying questions when:**
+- Trading logic is ambiguous ("What should happen if signal = 0?")
+- Risk parameters undefined ("What's the max position size?")
+- Architecture choice unclear ("Single agent or multi-agent for this?")
+- Performance requirements vague ("What's acceptable latency?")
+
+**Suggest improvements when:**
+- Missing error handling
+- Lack of type hints
+- Hard-coded values (suggest config file)
+- Synchronous code that should be async
+- Missing audit logging
+- Inadequate testing
+
+---
+
+## 📝 Git & Version Control
+
+**Branch Naming:**
+- `feature/agent-swing-trading` - New features
+- `bugfix/circuit-breaker-threshold` - Bug fixes
+- `hotfix/production-order-bug` - Critical production fixes
+- `refactor/risk-manager-async` - Code refactoring
+- `docs/api-documentation` - Documentation
+
+**Commit Messages (Conventional Commits):**
+```
+feat(agents): add swing trading configuration for XAUUSD
+fix(risk): circuit breaker not triggering at 15% loss
+docs(api): add WebSocket endpoint documentation
+refactor(mcp): async broker adapter implementation
+test(agents): add unit tests for position sizing
+```
+
+**Versioning (Semantic):**
+- `v0.1.0` - Initial MVP (paper trading only)
+- `v0.2.0` - Multi-agent support
+- `v1.0.0` - First production release (live trading)
+- `v1.1.0` - New features (backward compatible)
+- `v2.0.0` - Breaking changes
+
+---
+
+## 🚀 Quick Reference Commands
+
+**Development:**
+```bash
+# Setup
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Run tests
+pytest tests/ -v --cov=mtquant
+
+# Run backend
+uvicorn api.main:app --reload --port 8000
+
+# Run frontend
+cd frontend && npm run dev
+
+# Type checking
+mypy mtquant/
+
+# Linting
+ruff check mtquant/
+black mtquant/
+```
+
+**Docker:**
+```bash
+# Build
+docker-compose build
+
+# Run
+docker-compose up -d
+
+# Logs
+docker-compose logs -f backend
+
+# Stop
+docker-compose down
+```
+
+**Database:**
+```bash
+# QuestDB
+docker run -p 9000:9000 questdb/questdb
+
+# PostgreSQL
+docker run -p 5432:5432 -e POSTGRES_PASSWORD=mtquant postgres:15
+
+# Redis
+docker run -p 6379:6379 redis:7-alpine
+```
+
+---
+
+**Remember**: Safety first, test thoroughly, never trust external systems, always maintain audit trails, and when in doubt - ask before executing trades with real money! 🛡️

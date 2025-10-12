@@ -1,0 +1,125 @@
+# MTQuant Broker Configuration
+# Defines broker-specific settings and mappings
+
+brokers:
+  # MetaTrader 5 Configuration
+  mt5:
+    name: "MetaTrader 5"
+    type: "mt5"
+    enabled: true
+    demo_accounts:
+      - account: 12345678
+        server: "ICMarkets-Demo"
+        description: "IC Markets Demo Account"
+      - account: 87654321
+        server: "XM-Demo"
+        description: "XM Demo Account"
+    
+    live_accounts:
+      - account: 98765432
+        server: "ICMarkets-Live"
+        description: "IC Markets Live Account"
+        risk_level: "high"
+    
+    settings:
+      timeout: 5.0
+      retry_attempts: 3
+      retry_delay: 1.0
+      connection_pool_size: 5
+      max_orders_per_minute: 60
+      max_positions: 100
+
+  # OANDA Configuration
+  oanda:
+    name: "OANDA"
+    type: "oanda"
+    enabled: false
+    accounts:
+      - account_id: "your_oanda_account_id"
+        environment: "practice"  # practice or live
+        description: "OANDA Practice Account"
+    
+    settings:
+      timeout: 10.0
+      retry_attempts: 3
+      retry_delay: 2.0
+      rate_limit: 100  # requests per minute
+      max_positions: 50
+
+  # Interactive Brokers Configuration
+  ib:
+    name: "Interactive Brokers"
+    type: "ib"
+    enabled: false
+    accounts:
+      - client_id: 1
+        host: "127.0.0.1"
+        port: 7497
+        description: "IB TWS Demo"
+    
+    settings:
+      timeout: 15.0
+      retry_attempts: 5
+      retry_delay: 3.0
+      connection_timeout: 30.0
+      max_positions: 200
+
+# Default broker selection
+default_broker: "mt5"
+
+# Broker failover configuration
+failover:
+  enabled: true
+  primary: "mt5"
+  secondary: "oanda"
+  tertiary: "ib"
+  
+  # Failover triggers
+  triggers:
+    - connection_timeout
+    - order_rejection
+    - position_sync_failure
+    - market_data_stale
+
+# Symbol mapping between brokers
+symbol_mapping:
+  XAUUSD:
+    mt5: "XAUUSD"
+    oanda: "XAU_USD"
+    ib: "XAUUSD"
+  
+  BTCUSD:
+    mt5: "BTCUSD"
+    oanda: "BTC_USD"
+    ib: "BTCUSD"
+  
+  USDJPY:
+    mt5: "USDJPY"
+    oanda: "USD_JPY"
+    ib: "USDJPY"
+  
+  EURUSD:
+    mt5: "EURUSD"
+    oanda: "EUR_USD"
+    ib: "EURUSD"
+
+# Broker-specific settings
+broker_settings:
+  mt5:
+    # MT5-specific settings
+    terminal_path: "C:\\Program Files\\MetaTrader 5\\terminal64.exe"
+    data_path: "C:\\Users\\%USERNAME%\\AppData\\Roaming\\MetaQuotes\\Terminal\\"
+    max_symbols: 1000
+    max_history_bars: 10000
+    
+  oanda:
+    # OANDA-specific settings
+    api_version: "v20"
+    max_instruments: 500
+    max_candles: 5000
+    
+  ib:
+    # IB-specific settings
+    tws_version: "974"
+    max_symbols: 200
+    max_history_days: 365

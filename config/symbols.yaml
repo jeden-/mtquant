@@ -1,0 +1,244 @@
+# MTQuant Symbol Configuration
+# Defines trading instruments and their characteristics
+
+symbols:
+  # Precious Metals
+  XAUUSD:
+    name: "Gold vs US Dollar"
+    type: "commodity"
+    category: "precious_metals"
+    enabled: true
+    trading_hours: "24/5"
+    pip_value: 0.01
+    typical_spread: 0.30
+    avg_daily_range: 20.0
+    min_lot_size: 0.01
+    max_lot_size: 100.0
+    lot_step: 0.01
+    margin_requirement: 0.01
+    swap_long: -2.5
+    swap_short: -1.8
+    correlation:
+      USDJPY: -0.3
+      DXY: -0.7
+      SPX: 0.2
+    notes: "Safe-haven asset, reacts to geopolitical events, USD strength"
+    
+  XAGUSD:
+    name: "Silver vs US Dollar"
+    type: "commodity"
+    category: "precious_metals"
+    enabled: false
+    trading_hours: "24/5"
+    pip_value: 0.001
+    typical_spread: 0.05
+    avg_daily_range: 0.8
+    min_lot_size: 0.01
+    max_lot_size: 100.0
+    lot_step: 0.01
+    margin_requirement: 0.02
+    swap_long: -3.2
+    swap_short: -2.1
+    correlation:
+      XAUUSD: 0.8
+      USDJPY: -0.2
+    notes: "Higher volatility than gold, industrial demand"
+
+  # Cryptocurrencies
+  BTCUSD:
+    name: "Bitcoin vs US Dollar"
+    type: "crypto"
+    category: "cryptocurrency"
+    enabled: true
+    trading_hours: "24/7"
+    pip_value: 0.01
+    typical_spread: 5.0
+    avg_daily_range: 1000.0
+    min_lot_size: 0.01
+    max_lot_size: 10.0
+    lot_step: 0.01
+    margin_requirement: 0.05
+    swap_long: 0.0
+    swap_short: 0.0
+    correlation: {}
+    notes: "High volatility, >95% algorithmic trading, weekend gaps"
+    
+  ETHUSD:
+    name: "Ethereum vs US Dollar"
+    type: "crypto"
+    category: "cryptocurrency"
+    enabled: false
+    trading_hours: "24/7"
+    pip_value: 0.01
+    typical_spread: 3.0
+    avg_daily_range: 80.0
+    min_lot_size: 0.01
+    max_lot_size: 50.0
+    lot_step: 0.01
+    margin_requirement: 0.05
+    swap_long: 0.0
+    swap_short: 0.0
+    correlation:
+      BTCUSD: 0.7
+    notes: "Smart contract platform, DeFi ecosystem"
+
+  # Forex Majors
+  USDJPY:
+    name: "US Dollar vs Japanese Yen"
+    type: "forex"
+    category: "major"
+    enabled: true
+    trading_hours: "24/5"
+    pip_value: 0.01
+    typical_spread: 0.1
+    avg_daily_range: 0.80
+    min_lot_size: 0.01
+    max_lot_size: 100.0
+    lot_step: 0.01
+    margin_requirement: 0.04
+    swap_long: -0.8
+    swap_short: 0.6
+    correlation:
+      XAUUSD: -0.3
+      SPX: 0.2
+      DXY: 0.5
+    notes: "Carry trade favorite, Asian session liquidity, safe-haven in risk-off"
+    
+  EURUSD:
+    name: "Euro vs US Dollar"
+    type: "forex"
+    category: "major"
+    enabled: true
+    trading_hours: "24/5"
+    pip_value: 0.0001
+    typical_spread: 0.1
+    avg_daily_range: 0.70
+    min_lot_size: 0.01
+    max_lot_size: 100.0
+    lot_step: 0.01
+    margin_requirement: 0.04
+    swap_long: -0.5
+    swap_short: 0.3
+    correlation:
+      DXY: -0.9
+      GBPUSD: 0.7
+    notes: "Highest forex liquidity (28% global volume), EUR/USD sentiment"
+    
+  GBPUSD:
+    name: "British Pound vs US Dollar"
+    type: "forex"
+    category: "major"
+    enabled: false
+    trading_hours: "24/5"
+    breast_value: 0.0001
+    typical_spread: 0.2
+    avg_daily_range: 0.85
+    min_lot_size: 0.01
+    max_lot_size: 100.0
+    lot_step: 0.01
+    margin_requirement: 0.04
+    swap_long: -0.3
+    swap_short: 0.1
+    correlation:
+      EURUSD: 0.7
+      DXY: -0.8
+    notes: "Brexit impact, Bank of England policy, London session"
+
+  # Forex Minors
+  AUDUSD:
+    name: "Australian Dollar vs US Dollar"
+    type: "forex"
+    category: "minor"
+    enabled: false
+    trading_hours: "24/5"
+    pip_value: 0.0001
+    typical_spread: 0.2
+    avg_daily_range: 0.60
+    min_lot_size: 0.01
+    max_lot_size: 100.0
+    lot_step: 0.01
+    margin_requirement: 0.04
+    swap_long: -0.2
+    swap_short: 0.4
+    correlation:
+      NZDUSD: 0.8
+      XAUUSD: 0.3
+    notes: "Commodity currency, RBA policy, Asian session"
+
+# Symbol groups for portfolio management
+symbol_groups:
+  majors:
+    - EURUSD
+    - USDJPY
+    - GBPUSD
+    - AUDUSD
+    
+  commodities:
+    - XAUUSD
+    - XAGUSD
+    
+  crypto:
+    - BTCUSD
+    - ETHUSD
+    
+  safe_havens:
+    - XAUUSD
+    - USDJPY
+    
+  risk_on:
+    - BTCUSD
+    - AUDUSD
+
+# Trading session definitions
+trading_sessions:
+  asian:
+    start: "00:00"
+    end: "09:00"
+    timezone: "UTC"
+    symbols: ["USDJPY", "AUDUSD"]
+    
+  london:
+    start: "08:00"
+    end: "17:00"
+    timezone: "UTC"
+    symbols: ["EURUSD", "GBPUSD"]
+    
+  new_york:
+    start: "13:00"
+    end: "22:00"
+    timezone: "UTC"
+    symbols: ["EURUSD", "USDJPY", "XAUUSD"]
+    
+  overlap:
+    london_new_york:
+      start: "13:00"
+      end: "17:00"
+      timezone: "UTC"
+      symbols: ["EURUSD", "GBPUSD", "USDJPY"]
+      notes: "Highest liquidity period"
+
+# Risk parameters per symbol
+risk_parameters:
+  XAUUSD:
+    max_position_size: 0.15  # 15% of portfolio
+    max_daily_loss: 0.03     # 3% daily loss limit
+    stop_loss_atr_multiplier: 2.0
+    take_profit_atr_multiplier: 3.0
+    
+  BTCUSD:
+    max_position_size: 0.10  # 10% of portfolio
+    max_daily_loss: 0.05     # 5% daily loss limit
+    stop_loss_atr_multiplier: 1.5
+    take_profit_atr_multiplier: 2.5
+    
+  USDJPY:
+    max_position_size: 0.20  # 20% of portfolio
+    max_daily_loss: 0.02     # 2% daily loss limit
+    stop_loss_atr_multiplier: 2.5
+    take_profit_atr_multiplier: 4.0
+    
+  EURUSD:
+    max_position_size: 0.25  # 25% of portfolio
+    max_daily_loss: 0.02     # 2% daily loss limit
+    stop_loss_atr_multiplier: 2.0
+    take_profit_atr_multiplier: 3.0
