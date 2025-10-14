@@ -24,6 +24,9 @@ import os
 from typing import Dict, Any, AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
+# Mock MCP before importing MTQuant components
+import tests.mock_mcp
+
 from mtquant.mcp_integration.adapters import MT5BrokerAdapter
 from mtquant.mcp_integration.models.order import Order
 from mtquant.mcp_integration.models.position import Position
