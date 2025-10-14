@@ -11,10 +11,15 @@ This module provides training capabilities for:
 from .train_ppo import train_ppo_agent, evaluate_agent
 from .specialist_trainer import SpecialistTrainer
 from .phase1_trainer import Phase1Trainer
+from .phase2_trainer import Phase2Trainer
+from .portfolio_reward import PortfolioRewardFunction, RewardConfig
 
 __all__ = [
     'train_ppo_agent',
     'evaluate_agent',
     'SpecialistTrainer',
-    'Phase1Trainer'
+    'Phase1Trainer',
+    'Phase2Trainer',
+    'PortfolioRewardFunction',
+    'RewardConfig'
 ]

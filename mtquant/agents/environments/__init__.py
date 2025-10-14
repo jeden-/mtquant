@@ -13,6 +13,7 @@ from .hierarchical_env import BaseHierarchicalEnv, EnvironmentConfig
 from .meta_controller_env import MetaControllerEnv
 from .specialist_env import SpecialistEnv
 from .parallel_env import ParallelHierarchicalWrapper, CurriculumLearningWrapper
+from .meta_controller_training_env import MetaControllerTrainingEnv, MetaControllerConfig
 
 __all__ = [
     'MTQuantTradingEnv',
@@ -21,5 +22,7 @@ __all__ = [
     'MetaControllerEnv',
     'SpecialistEnv',
     'ParallelHierarchicalWrapper',
-    'CurriculumLearningWrapper'
+    'CurriculumLearningWrapper',
+    'MetaControllerTrainingEnv',
+    'MetaControllerConfig'
 ]
