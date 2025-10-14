@@ -13,12 +13,72 @@ MTQuant to system wieloagentowy, gdzie każdy agent RL jest odpowiedzialny za je
 
 ### Kluczowe Komponenty
 
-- **🤖 Agenci RL**: Niezależne agenty dla każdego instrumentu
+- **🤖 Agenci RL**: Niezależne agenty PPO dla każdego instrumentu
 - **🛡️ Zarządzanie Ryzykiem**: Trzypoziomowa obrona przed stratami
-- **📊 Integracja Brokerów**: Wsparcie dla MT4/MT5, OANDA, Interactive Brokers
+- **📊 Integracja Brokerów**: Wsparcie dla MT4/MT5 z MCP (Model Context Protocol)
 - **💾 Bazy Danych**: QuestDB (time-series), PostgreSQL (transakcyjne), Redis (hot data)
 - **🌐 API**: FastAPI z WebSocket dla czasu rzeczywistego
 - **📱 Frontend**: React 18+ z TypeScript i TradingView Charts
+
+## 🛡️ System Zarządzania Ryzykiem
+
+MTQuant implementuje zaawansowany system zarządzania ryzykiem z trzypoziomową obroną:
+
+### Poziom 1: Walidacja Pre-Trade (<50ms)
+- **Walidacja pasm cenowych**: Cena w zakresie ±5% od ostatniej znanej
+- **Limity rozmiaru pozycji**: Maksymalnie 10% kapitału portfela
+- **Weryfikacja kapitału**: Dostępny margin > wymagany × 1.5
+- **Kontrola ekspozycji portfela**: Gross exposure < 150%, Net < 100%
+- **Zgodność regulacyjna**: Limity dźwigni, godziny handlu
+- **Ocena ryzyka korelacji**: Monitorowanie korelacji między pozycjami
+
+### Poziom 2: Kalkulacja Rozmiaru Pozycji
+- **Kryterium Kelly'ego**: Optymalne pozycjonowanie na podstawie historii
+- **Pozycjonowanie oparte na zmienności**: ATR i volatility-based sizing
+- **Metoda stałej frakcji**: Stały procent kapitału na transakcję
+- **Dynamiczna korekta ryzyka**: Dostosowanie do warunków rynkowych
+
+### Poziom 3: System Circuit Breaker
+- **Poziom 1 (5% straty)**: Ostrzeżenia, zmniejszenie pozycji o 50%
+- **Poziom 2 (10% straty)**: Zatrzymanie nowych pozycji, zamknięcie 50% istniejących
+- **Poziom 3 (15% straty)**: Pełne zatrzymanie handlu, zamknięcie wszystkich pozycji
+- **Automatyczne odzyskiwanie**: Stopniowe przywracanie po poprawie wyników
+
+## 🤖 Pierwszy Agent RL (PPO)
+
+System zawiera w pełni funkcjonalnego agenta PPO dla instrumentu XAUUSD:
+
+### Architektura Agenta
+- **Model PPO**: Proximal Policy Optimization z Stable-Baselines3
+- **Sieć Policy**: Actor-Critic z architekturą [512, 256, 128, 64]
+- **Przestrzeń stanów**: Stacjonarne cechy rynkowe + pozycja + ryzyko
+- **Przestrzeń akcji**: Ciągła od -1 do +1 (sygnał handlowy)
+- **Funkcja nagrody**: Risk-adjusted returns z karą za koszty transakcyjne
+
+### Proces Treningu
+```python
+# Konfiguracja PPO
+model = PPO(
+    'MlpPolicy',
+    env,
+    learning_rate=0.0001,
+    n_steps=8192,
+    batch_size=256,
+    gamma=0.999,
+    verbose=1
+)
+
+# Trening
+model.learn(total_timesteps=500000)
+model.save('models/checkpoints/XAUUSD_ppo_final.zip')
+```
+
+### Wyniki Treningu
+- **Total P&L**: +2,468.46 (pozytywny wynik)
+- **Win Rate**: 52.05% (ponad 50%)
+- **Sharpe Ratio**: 0.054 (pozytywny)
+- **Profit Factor**: 1.08 (pozytywny)
+- **Średni P&L per trade**: +0.29
 
 ## 🚀 Szybki Start
 

@@ -1,21 +1,11 @@
 """
-MTQuant Agents Module
+RL Agents for MTQuant trading system.
 
-Contains RL trading agents, environments, policies, and training infrastructure.
-
-Components:
-- environments/: Trading environments for RL training
-- policies/: RL algorithms (PPO, SAC, TD3)
-- training/: Training scripts and utilities
-- agent_manager.py: Agent lifecycle management
-
-Each agent is responsible for a single instrument and generates trading signals
-based on market data and learned patterns.
+Provides reinforcement learning agents for automated trading.
 """
 
-__version__ = "0.1.0"
+from .environments.base_trading_env import MTQuantTradingEnv
 
-# AgentManager will be imported here when implemented
-# from .agent_manager import AgentManager
-
-__all__ = []
+__all__ = [
+    'MTQuantTradingEnv'
+]

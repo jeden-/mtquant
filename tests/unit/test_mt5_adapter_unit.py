@@ -32,8 +32,8 @@ def mock_broker_config():
 
 @pytest.fixture
 def mt5_adapter(mock_broker_config):
-    """Create MT5BrokerAdapter with mocked MT5Client."""
-    with patch('mtquant.mcp_integration.adapters.mt5_adapter.MT5Client') as mock_client_class:
+    """Create MT5BrokerAdapter with mocked MT5MCPClient."""
+    with patch('mtquant.mcp_integration.adapters.mt5_adapter.MT5MCPClient') as mock_client_class:
         mock_client = AsyncMock()
         mock_client_class.return_value = mock_client
         
@@ -42,7 +42,7 @@ def mt5_adapter(mock_broker_config):
             config=mock_broker_config
         )
         
-        # Mock the MT5Client instance
+        # Mock the MT5MCPClient instance
         adapter.mt5_client = mock_client
         
         return adapter

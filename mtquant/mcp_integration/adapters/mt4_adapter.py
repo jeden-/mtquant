@@ -339,6 +339,22 @@ class MT4BrokerAdapter(BrokerAdapter):
             self.logger.error(f"Failed to get account info via MT4: {e}")
             return {}
     
+    async def close_position(self, position_id: str) -> bool:
+        """
+        Close specific position.
+        
+        Args:
+            position_id: Position identifier
+            
+        Returns:
+            True if position closed successfully
+        """
+        try:
+            return await self.mt4_client.close_position(position_id)
+        except Exception as e:
+            self.logger.error(f"Failed to close position {position_id} via MT4: {e}")
+            return False
+    
     def _validate_order(self, order: Order) -> bool:
         """
         Validate order before sending to broker.

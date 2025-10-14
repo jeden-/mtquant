@@ -1,0 +1,158 @@
+# Agent Configuration for MTQuant
+
+# PPO Agent Configuration
+ppo_agent:
+  initial_capital: 10000
+  transaction_cost: 0.001  # Further reduced for better trading efficiency
+  learning_rate: 0.0001   # Reduced for more stable learning
+  n_steps: 8192           # Doubled for better sample efficiency
+  batch_size: 256          # Doubled batch size
+  gamma: 0.999            # Increased discount factor for longer-term thinking
+  gae_lambda: 0.95
+  ent_coef: 0.005         # Reduced entropy for more focused exploration
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  clip_range: 0.2
+  n_epochs: 15            # Increased epochs for better learning
+
+# Position Sizing Configuration
+position_sizing:
+  volatility:
+    risk_per_trade: 0.02      # 2% risk per trade
+    atr_multiplier: 2.0       # ATR multiplier for stop loss
+    max_position_pct: 0.05    # Max 5% position size
+  
+  kelly:
+    default_win_rate: 0.55
+    default_avg_win: 100
+    default_avg_loss: 80
+    fraction: 0.25            # Use 25% of Kelly fraction for safety
+  
+  fixed:
+    fraction: 0.02            # 2% of portfolio per trade
+    max_position_pct: 0.05    # Max 5% position size
+
+# Environment Configuration
+environment:
+  min_action_threshold: 0.01   # Minimum action to execute trade (aligned with code)
+  min_position_change: 0.001   # Minimum position change (aligned with code)
+  episode_length: 2000         # Increased episode length for more data
+  reward_scaling: 1.0         # Reward scaling factor
+
+# Training Configuration
+training:
+  total_timesteps: 500000     # Increased for better learning
+  eval_freq: 25000           # Increased evaluation frequency
+  n_eval_episodes: 20        # More episodes for better evaluation
+  save_freq: 100000          # Increased save frequency
+  log_interval: 5000         # Increased log interval
+  
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 5
+    min_improvement: 0.01
+
+# Model Configuration
+model:
+  policy: "MlpPolicy"
+  policy_kwargs:
+    net_arch: [512, 256, 128, 64]  # Deeper network architecture
+    activation_fn: "tanh"           # Tanh activation (default)
+  
+  # PPO specific
+  ppo:
+    learning_rate: 0.0003
+    n_steps: 2048
+    batch_size: 64
+    gamma: 0.99
+    gae_lambda: 0.95
+    ent_coef: 0.01
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+    clip_range: 0.2
+    n_epochs: 10
+
+# Data Configuration
+data:
+  symbols:
+    - XAUUSD
+    - EURUSD
+    - GBPUSD
+    - USDJPY
+    - BTCUSD
+  
+  timeframes:
+    - 1H
+    - 4H
+    - 1D
+  
+  features:
+    - log_returns
+    - rsi
+    - macd
+    - macd_signal
+    - macd_histogram
+    - bb_upper
+    - bb_middle
+    - bb_lower
+    - bb_width
+    - sma_20
+    - sma_50
+    - atr
+
+# Evaluation Configuration
+evaluation:
+  metrics:
+    - sharpe_ratio
+    - sortino_ratio
+    - win_rate
+    - profit_factor
+    - max_drawdown
+    - total_return
+  
+  thresholds:
+    min_sharpe_ratio: 1.0
+    min_win_rate: 0.45
+    max_drawdown: 0.20
+    min_profit_factor: 1.2
+
+# Logging Configuration
+logging:
+  tensorboard: true
+  wandb: false
+  log_level: INFO
+  
+  # Log paths
+  paths:
+    tensorboard: "logs/tensorboard"
+    models: "models/checkpoints"
+    evaluation: "logs/eval"
+    training: "logs/training"
+
+# Deployment Configuration
+deployment:
+  # Model paths
+  model_paths:
+    XAUUSD: "models/checkpoints/XAUUSD_ppo_final.zip"
+    EURUSD: "models/checkpoints/EURUSD_ppo_final.zip"
+    GBPUSD: "models/checkpoints/GBPUSD_ppo_final.zip"
+    USDJPY: "models/checkpoints/USDJPY_ppo_final.zip"
+    BTCUSD: "models/checkpoints/BTCUSD_ppo_final.zip"
+  
+  # Deployment settings
+  settings:
+    paper_trading: true
+    live_trading: false
+    risk_management: true
+    position_sizing: true
+    circuit_breaker: true
+  
+  # Performance monitoring
+  monitoring:
+    enabled: true
+    check_interval: 300  # 5 minutes
+    alert_thresholds:
+      drawdown: 0.10
+      sharpe_ratio: 0.5
+      win_rate: 0.40

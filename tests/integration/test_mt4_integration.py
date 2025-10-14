@@ -21,6 +21,7 @@ pytest tests/integration/test_mt4_integration.py -v -s
 """
 
 import pytest
+import pytest_asyncio
 import asyncio
 import yaml
 import os
@@ -59,7 +60,7 @@ def broker_config() -> Dict[str, Any]:
         pytest.skip(f"Could not load broker config: {e}")
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def mt4_adapter(broker_config):
     """Create and connect MT4 adapter."""
     adapter = MT4BrokerAdapter("generic_mt4_demo", broker_config)

@@ -104,6 +104,12 @@ class BrokerManager:
                             broker_id=config['broker_id'],
                             config=config
                         )
+                    elif config['platform'] == 'mt4':
+                        from mtquant.mcp_integration.adapters import MT4BrokerAdapter
+                        adapter = MT4BrokerAdapter(
+                            broker_id=config['broker_id'],
+                            config=config
+                        )
                     else:
                         self.logger.warning(f"Unsupported platform: {config['platform']}")
                         continue
