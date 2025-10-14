@@ -19,15 +19,16 @@ from .forex_specialist import ForexSpecialist
 from .commodities_specialist import CommoditiesSpecialist
 from .equity_specialist import EquitySpecialist
 from .specialist_factory import SpecialistRegistry, get_specialist_registry, create_specialist
+from .communication import (
+    AllocationMessage,
+    PerformanceReport,
+    CoordinationSignal,
+    AlertMessage,
+    CommunicationHub,
+    MessageType
+)
 
-# TODO: Import other modules as they are implemented
-# from .communication import (
-#     AllocationMessage,
-#     PerformanceReport,
-#     CoordinationSignal,
-#     CommunicationHub
-# )
-# from .hierarchical_system import HierarchicalTradingSystem
+from .hierarchical_system import HierarchicalTradingSystem, SystemState
 
 __all__ = [
     'MetaController',
@@ -38,9 +39,12 @@ __all__ = [
     'SpecialistRegistry',
     'get_specialist_registry',
     'create_specialist',
-    # 'AllocationMessage',
-    # 'PerformanceReport',
-    # 'CoordinationSignal',
-    # 'CommunicationHub',
-    # 'HierarchicalTradingSystem'
+    'AllocationMessage',
+    'PerformanceReport',
+    'CoordinationSignal',
+    'AlertMessage',
+    'CommunicationHub',
+    'MessageType',
+    'HierarchicalTradingSystem',
+    'SystemState'
 ]

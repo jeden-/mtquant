@@ -1,158 +1,71 @@
-# Agent Configuration for MTQuant
+# MTQuant Hierarchical Multi-Agent System Configuration
+# Sprint 3 - Configuration for Meta-Controller, Specialists, and Training
 
-# PPO Agent Configuration
-ppo_agent:
-  initial_capital: 10000
-  transaction_cost: 0.001  # Further reduced for better trading efficiency
-  learning_rate: 0.0001   # Reduced for more stable learning
-  n_steps: 8192           # Doubled for better sample efficiency
-  batch_size: 256          # Doubled batch size
-  gamma: 0.999            # Increased discount factor for longer-term thinking
-  gae_lambda: 0.95
-  ent_coef: 0.005         # Reduced entropy for more focused exploration
-  vf_coef: 0.5
-  max_grad_norm: 0.5
-  clip_range: 0.2
-  n_epochs: 15            # Increased epochs for better learning
+meta_controller:
+  state_dim: 74
+  hidden_dim: 256
+  hidden_dim_2: 128
+  dropout: 0.2
+  learning_rate: 0.0003
 
-# Position Sizing Configuration
-position_sizing:
-  volatility:
-    risk_per_trade: 0.02      # 2% risk per trade
-    atr_multiplier: 2.0       # ATR multiplier for stop loss
-    max_position_pct: 0.05    # Max 5% position size
-  
-  kelly:
-    default_win_rate: 0.55
-    default_avg_win: 100
-    default_avg_loss: 80
-    fraction: 0.25            # Use 25% of Kelly fraction for safety
-  
-  fixed:
-    fraction: 0.02            # 2% of portfolio per trade
-    max_position_pct: 0.05    # Max 5% position size
-
-# Environment Configuration
-environment:
-  min_action_threshold: 0.01   # Minimum action to execute trade (aligned with code)
-  min_position_change: 0.001   # Minimum position change (aligned with code)
-  episode_length: 2000         # Increased episode length for more data
-  reward_scaling: 1.0         # Reward scaling factor
-
-# Training Configuration
-training:
-  total_timesteps: 500000     # Increased for better learning
-  eval_freq: 25000           # Increased evaluation frequency
-  n_eval_episodes: 20        # More episodes for better evaluation
-  save_freq: 100000          # Increased save frequency
-  log_interval: 5000         # Increased log interval
-  
-  # Early stopping
-  early_stopping:
-    enabled: true
-    patience: 5
-    min_improvement: 0.01
-
-# Model Configuration
-model:
-  policy: "MlpPolicy"
-  policy_kwargs:
-    net_arch: [512, 256, 128, 64]  # Deeper network architecture
-    activation_fn: "tanh"           # Tanh activation (default)
-  
-  # PPO specific
-  ppo:
+specialists:
+  forex:
+    type: ForexSpecialist
+    instruments: [EURUSD, GBPUSD, USDJPY]
+    market_features_dim: 8
+    observation_dim: 50  # From environment
+    hidden_dim: 64
     learning_rate: 0.0003
-    n_steps: 2048
-    batch_size: 64
-    gamma: 0.99
-    gae_lambda: 0.95
-    ent_coef: 0.01
-    vf_coef: 0.5
-    max_grad_norm: 0.5
-    clip_range: 0.2
-    n_epochs: 10
+  
+  commodities:
+    type: CommoditiesSpecialist
+    instruments: [XAUUSD, WTIUSD]
+    market_features_dim: 6
+    observation_dim: 50
+    hidden_dim: 64
+    learning_rate: 0.0003
+  
+  equity:
+    type: EquitySpecialist
+    instruments: [SPX500, NAS100, US30]
+    market_features_dim: 7
+    observation_dim: 50
+    hidden_dim: 64
+    learning_rate: 0.0003
 
-# Data Configuration
-data:
-  symbols:
-    - XAUUSD
-    - EURUSD
-    - GBPUSD
-    - USDJPY
-    - BTCUSD
-  
-  timeframes:
-    - 1H
-    - 4H
-    - 1D
-  
-  features:
-    - log_returns
-    - rsi
-    - macd
-    - macd_signal
-    - macd_histogram
-    - bb_upper
-    - bb_middle
-    - bb_lower
-    - bb_width
-    - sma_20
-    - sma_50
-    - atr
+portfolio_risk:
+  max_portfolio_var: 0.02
+  max_correlation_exposure: 0.7
+  max_sector_allocation: 0.4
+  var_confidence: 0.95
+  correlation_window: 100
 
-# Evaluation Configuration
-evaluation:
-  metrics:
-    - sharpe_ratio
-    - sortino_ratio
-    - win_rate
-    - profit_factor
-    - max_drawdown
-    - total_return
+training:
+  phase_1_timesteps: 500000  # Individual specialist training
+  phase_2_timesteps: 300000  # Meta pre-training
+  phase_3_timesteps: 1000000  # Joint fine-tuning
   
-  thresholds:
-    min_sharpe_ratio: 1.0
-    min_win_rate: 0.45
-    max_drawdown: 0.20
-    min_profit_factor: 1.2
+  batch_size: 256
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  
+  # Multi-agent specific
+  meta_update_freq: 1  # Update meta every step
+  specialist_update_freq: 5  # Update specialists every 5 steps
+  
+  # Hardware
+  device: "cuda"  # or "cpu"
+  n_envs: 8  # Parallel environments
 
-# Logging Configuration
-logging:
-  tensorboard: true
-  wandb: false
-  log_level: INFO
-  
-  # Log paths
-  paths:
-    tensorboard: "logs/tensorboard"
-    models: "models/checkpoints"
-    evaluation: "logs/eval"
-    training: "logs/training"
+communication:
+  message_history_size: 1000
+  correlation_id_enabled: true
+  log_all_messages: true
 
-# Deployment Configuration
-deployment:
-  # Model paths
-  model_paths:
-    XAUUSD: "models/checkpoints/XAUUSD_ppo_final.zip"
-    EURUSD: "models/checkpoints/EURUSD_ppo_final.zip"
-    GBPUSD: "models/checkpoints/GBPUSD_ppo_final.zip"
-    USDJPY: "models/checkpoints/USDJPY_ppo_final.zip"
-    BTCUSD: "models/checkpoints/BTCUSD_ppo_final.zip"
-  
-  # Deployment settings
-  settings:
-    paper_trading: true
-    live_trading: false
-    risk_management: true
-    position_sizing: true
-    circuit_breaker: true
-  
-  # Performance monitoring
-  monitoring:
-    enabled: true
-    check_interval: 300  # 5 minutes
-    alert_thresholds:
-      drawdown: 0.10
-      sharpe_ratio: 0.5
-      win_rate: 0.40
+monitoring:
+  log_interval: 1000  # steps
+  save_interval: 10000
+  eval_interval: 5000
+  eval_episodes: 10
