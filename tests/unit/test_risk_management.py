@@ -378,3 +378,4 @@ class TestRiskManagementPerformance:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--cov=mtquant.risk_management"])
+

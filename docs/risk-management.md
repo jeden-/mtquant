@@ -504,3 +504,4 @@ This will provide detailed information about:
 The MTQuant Risk Management System provides comprehensive protection for trading operations while allowing profitable strategies to operate effectively. The 3-tier defense mechanism ensures that losses are contained while maintaining system flexibility and responsiveness to market conditions.
 
 Regular monitoring, conservative limits, and proper configuration are essential for effective risk management. The system is designed to be both protective and flexible, allowing for adaptation to changing market conditions while maintaining strict risk controls.
+
