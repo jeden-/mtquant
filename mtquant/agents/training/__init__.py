@@ -13,6 +13,10 @@ from .specialist_trainer import SpecialistTrainer
 from .phase1_trainer import Phase1Trainer
 from .phase2_trainer import Phase2Trainer
 from .portfolio_reward import PortfolioRewardFunction, RewardConfig
+from .gradient_coordination import GradientCoordinationSystem, GradientCoordinationConfig
+from .curriculum_learning import AdvancedCurriculumLearning, CurriculumConfig
+from .model_checkpointing import ModelCheckpointingSystem, CheckpointConfig
+from .training_monitoring import TrainingMonitoringDashboard, MonitoringConfig
 
 __all__ = [
     'train_ppo_agent',
@@ -21,5 +25,13 @@ __all__ = [
     'Phase1Trainer',
     'Phase2Trainer',
     'PortfolioRewardFunction',
-    'RewardConfig'
+    'RewardConfig',
+    'GradientCoordinationSystem',
+    'GradientCoordinationConfig',
+    'AdvancedCurriculumLearning',
+    'CurriculumConfig',
+    'ModelCheckpointingSystem',
+    'CheckpointConfig',
+    'TrainingMonitoringDashboard',
+    'MonitoringConfig'
 ]
