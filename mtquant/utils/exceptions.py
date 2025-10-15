@@ -202,6 +202,15 @@ class AgentDeploymentError(AgentError):
     pass
 
 
+class StateTransitionError(AgentError):
+    """Invalid state transition.
+    
+    Raised when attempting an invalid state transition
+    in the agent lifecycle.
+    """
+    pass
+
+
 # Configuration exceptions
 class ConfigurationError(MTQuantError):
     """Configuration-related errors.
