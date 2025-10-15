@@ -1,21 +1,20 @@
 """
-API Routes
+API Routes - FastAPI Endpoints.
 
-FastAPI route definitions for MTQuant trading system.
-Organized by functional areas for maintainability.
-
-Route Categories:
-- agents/: Agent management and monitoring
-- trading/: Trading operations and execution
-- risk/: Risk management and limits
-- data/: Market data and indicators
-- system/: System health and configuration
-
-All routes include proper error handling, validation,
-and security measures for production use.
+Provides REST API endpoints for the MTQuant trading system.
 """
+
+from api.routes.agents import router as agents_router, initialize_agent_routes
+from api.routes.portfolio import router as portfolio_router, initialize_portfolio_routes
+from api.routes.orders import router as orders_router, initialize_order_routes
 
 __version__ = "0.1.0"
 
-# Route modules will be imported here when implemented
-__all__ = []
+__all__ = [
+    "agents_router",
+    "portfolio_router",
+    "orders_router",
+    "initialize_agent_routes",
+    "initialize_portfolio_routes",
+    "initialize_order_routes",
+]
