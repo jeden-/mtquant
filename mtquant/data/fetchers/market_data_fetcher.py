@@ -504,3 +504,4 @@ class MarketDataFetcher:
         """Check if fetcher is running."""
         return self._running
 
+

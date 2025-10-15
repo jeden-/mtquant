@@ -592,3 +592,4 @@ class QuestDBClient:
         """Check if connected."""
         return self._connected and self._pool is not None
 
+

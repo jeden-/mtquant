@@ -522,3 +522,4 @@ python -m pytest tests/unit/ --cov=mtquant --cov-report=term-missing | grep -E "
 **Pokrycie testami:** 79% (1046/1046 testów ✅)  
 **Status projektu:** 🟢 Funkcjonalny core, 🟠 Brakuje UI i storage layer
 
+

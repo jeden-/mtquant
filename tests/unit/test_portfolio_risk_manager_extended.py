@@ -424,3 +424,4 @@ class TestPortfolioRiskManagerExtended:
         assert avg_corr == 0.0  # No off-diagonal elements
 
 
+

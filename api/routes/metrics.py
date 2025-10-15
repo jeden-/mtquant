@@ -452,3 +452,4 @@ def initialize_metrics_routes(
     db_client = db
     logger.info("Metrics routes initialized")
 
+

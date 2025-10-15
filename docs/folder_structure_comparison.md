@@ -473,3 +473,4 @@ Struktura folderów jest **prawie idealna**. Nie zmieniaj jej. Skup się na **uz
 **Autor:** MTQuant Development Team  
 **Status:** Struktura folderów zgodna w ~85%, wymaga uzupełnienia plików
 
+

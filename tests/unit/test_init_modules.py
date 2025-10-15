@@ -50,3 +50,4 @@ def test_import_main_package():
     assert mtquant is not None
     assert hasattr(mtquant, '__version__')
 
+

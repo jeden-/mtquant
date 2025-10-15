@@ -27,9 +27,9 @@ from api.routes import (
     initialize_websocket_routes,
     initialize_metrics_routes
 )
-from mtquant.data.storage.redis_client import RedisClient
-from mtquant.data.storage.postgresql_client import PostgreSQLClient
-from mtquant.data.storage.questdb_client import QuestDBClient
+from mtquant.data.storage.redis_client import RedisClient, RedisConfig
+from mtquant.data.storage.postgresql_client import PostgreSQLClient, PostgreSQLConfig
+from mtquant.data.storage.questdb_client import QuestDBClient, QuestDBConfig
 from mtquant.agents.agent_manager import AgentLifecycleManager
 from mtquant.risk_management.portfolio_risk_manager import PortfolioRiskManager
 from mtquant.utils.logger import get_logger
@@ -56,63 +56,96 @@ async def lifespan(app: FastAPI):
     logger.info("Starting MTQuant API...")
     
     try:
-        # Initialize Redis client
+        # Initialize Redis client (optional)
         global redis_client
-        redis_client = RedisClient(
-            host="localhost",
-            port=6379,
-            db=0
-        )
-        await redis_client.connect()
-        logger.info("Redis client connected")
+        try:
+            redis_config = RedisConfig(
+                host="localhost",
+                port=6379,
+                db=0
+            )
+            redis_client = RedisClient(redis_config)
+            await redis_client.connect()
+            logger.info("✅ Redis client connected")
+        except Exception as e:
+            logger.warning(f"⚠️ Redis connection failed: {e}. Continuing without Redis.")
+            redis_client = None
         
-        # Initialize PostgreSQL client
+        # Initialize PostgreSQL client (optional)
         global db_client
-        db_client = PostgreSQLClient(
-            host="localhost",
-            port=5432,
-            database="mtquant",
-            user="mtquant_user",
-            password="mtquant_password"  # TODO: Move to env vars
-        )
-        await db_client.connect()
-        logger.info("PostgreSQL client connected")
+        try:
+            db_config = PostgreSQLConfig(
+                host="localhost",
+                port=5432,
+                database="mtquantum",
+                user="postgres",
+                password="MARiusz@!2025"
+            )
+            db_client = PostgreSQLClient(db_config)
+            await db_client.connect()
+            logger.info("✅ PostgreSQL client connected")
+        except Exception as e:
+            logger.warning(f"⚠️ PostgreSQL connection failed: {e}. Continuing without PostgreSQL.")
+            db_client = None
         
-        # Initialize QuestDB client
+        # Initialize QuestDB client (optional)
         global questdb_client
-        questdb_client = QuestDBClient(
-            host="localhost",
-            port=9000
-        )
-        await questdb_client.connect()
-        logger.info("QuestDB client connected")
+        try:
+            questdb_config = QuestDBConfig(
+                host="localhost",
+                port=8812
+            )
+            questdb_client = QuestDBClient(questdb_config)
+            await questdb_client.connect()
+            logger.info("✅ QuestDB client connected")
+        except Exception as e:
+            logger.warning(f"⚠️ QuestDB connection failed: {e}. Continuing without QuestDB.")
+            questdb_client = None
         
-        # Initialize Agent Manager
+        # Initialize Agent Manager components (optional)
         global agent_manager
-        agent_manager = AgentLifecycleManager(
-            config_path="config/agents.yaml"
-        )
-        logger.info("Agent Manager initialized")
+        agent_scheduler = None
+        agent_registry = None
+        try:
+            from mtquant.agents.agent_manager import AgentScheduler, AgentRegistry
+            agent_manager = AgentLifecycleManager()
+            agent_scheduler = AgentScheduler()
+            agent_registry = AgentRegistry(lifecycle_manager=agent_manager)
+            logger.info("✅ Agent Manager initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ Agent Manager initialization failed: {e}. Continuing without Agent Manager.")
+            agent_manager = None
         
-        # Initialize Risk Manager
+        # Initialize Risk Manager (optional)
         global risk_manager
-        risk_manager = PortfolioRiskManager(
-            config_path="config/risk_limits.yaml"
-        )
-        logger.info("Risk Manager initialized")
+        try:
+            risk_manager = PortfolioRiskManager(
+                config_path="config/risk_limits.yaml"
+            )
+            logger.info("✅ Risk Manager initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ Risk Manager initialization failed: {e}. Continuing without Risk Manager.")
+            risk_manager = None
         
-        # Initialize route dependencies
-        initialize_agent_routes(agent_manager)
-        initialize_portfolio_routes(risk_manager)
-        initialize_order_routes(db_client)
-        initialize_websocket_routes(redis_client)
-        initialize_metrics_routes(redis_client, db_client)
+        # Initialize route dependencies (with None checks)
+        if agent_manager and agent_scheduler and agent_registry:
+            initialize_agent_routes(agent_manager, agent_scheduler, agent_registry)
+        if db_client and risk_manager:
+            initialize_portfolio_routes(db_client, risk_manager)
+        # Orders route needs BrokerManager and PreTradeChecker - skip for now
+        # if db_client:
+        #     initialize_order_routes(db_client, broker_manager, pre_trade_checker)
+        if redis_client:
+            initialize_websocket_routes(redis_client)
+        if redis_client or db_client:
+            initialize_metrics_routes(redis_client, db_client)
         
-        logger.info("✅ MTQuant API started successfully!")
+        logger.info("✅ MTQuant API started successfully (some services may be unavailable)!")
     
     except Exception as e:
-        logger.error(f"Failed to start API: {e}", exc_info=True)
-        raise
+        logger.error(f"❌ Critical error during startup: {e}", exc_info=True)
+        logger.warning("⚠️ Starting API in degraded mode...")
+        # Don't raise - allow API to start in degraded mode
     
     yield
     

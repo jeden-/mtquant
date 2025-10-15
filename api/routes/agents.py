@@ -539,3 +539,4 @@ def initialize_agent_routes(
     registry = reg
     logger.info("Agent routes initialized")
 
+

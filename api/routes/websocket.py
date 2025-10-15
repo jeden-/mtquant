@@ -482,3 +482,4 @@ def get_connection_stats() -> dict:
     """Get WebSocket connection statistics."""
     return manager.get_stats()
 
+

@@ -24,3 +24,4 @@ def test_policies_module_all():
     assert hasattr(mtquant.agents.policies, '__all__')
     assert isinstance(mtquant.agents.policies.__all__, list)
 
+

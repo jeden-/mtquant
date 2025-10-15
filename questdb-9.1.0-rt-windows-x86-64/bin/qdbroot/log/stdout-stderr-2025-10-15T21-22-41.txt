@@ -1,0 +1,2 @@
+Reading log configuration from C:\Users\win\Documents\mtquant\questdb-9.1.0-rt-windows-x86-64\bin\qdbroot\conf\log.conf
+2025-10-15T19:22:49.831775Z A http-min-server listening on 0.0.0.0:9003 [fd=7681549009140 backlog=64]

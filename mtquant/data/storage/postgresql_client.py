@@ -74,45 +74,57 @@ class PostgreSQLClient:
         self.logger = get_logger(__name__)
         self._connected = False
     
-    async def connect(self) -> bool:
+    async def connect(self, retries: int = 5, delay: int = 3) -> bool:
         """
-        Establish connection pool to PostgreSQL.
+        Establish connection pool to PostgreSQL with retries.
         
+        Args:
+            retries: Number of connection attempts
+            delay: Delay between attempts in seconds
+
         Returns:
             True if connection successful
             
         Raises:
-            ConnectionError: If connection fails
+            ConnectionError: If connection fails after all retries
         """
-        try:
-            self._pool = await asyncpg.create_pool(
-                host=self.config.host,
-                port=self.config.port,
-                database=self.config.database,
-                user=self.config.user,
-                password=self.config.password,
-                min_size=self.config.min_pool_size,
-                max_size=self.config.max_pool_size,
-                command_timeout=self.config.command_timeout
-            )
+        for attempt in range(retries):
+            try:
+                self._pool = await asyncpg.create_pool(
+                    host=self.config.host,
+                    port=self.config.port,
+                    database=self.config.database,
+                    user=self.config.user,
+                    password=self.config.password,
+                    min_size=self.config.min_pool_size,
+                    max_size=self.config.max_pool_size,
+                    command_timeout=self.config.command_timeout
+                )
+                
+                # Test connection
+                async with self._pool.acquire() as conn:
+                    await conn.fetchval('SELECT 1')
+                
+                self._connected = True
+                self.logger.info(
+                    f"Connected to PostgreSQL at {self.config.host}:{self.config.port}"
+                )
+                
+                # Create tables if they don't exist
+                await self._create_tables()
+                
+                return True
             
-            # Test connection
-            async with self._pool.acquire() as conn:
-                await conn.fetchval('SELECT 1')
-            
-            self._connected = True
-            self.logger.info(
-                f"Connected to PostgreSQL at {self.config.host}:{self.config.port}"
-            )
-            
-            # Create tables if they don't exist
-            await self._create_tables()
-            
-            return True
-        
-        except Exception as e:
-            self.logger.error(f"Failed to connect to PostgreSQL: {e}")
-            raise ConnectionError(f"PostgreSQL connection failed: {e}")
+            except Exception as e:
+                self.logger.warning(
+                    f"PostgreSQL connection attempt {attempt + 1}/{retries} failed: {e}"
+                )
+                if attempt < retries - 1:
+                    await asyncio.sleep(delay)
+                else:
+                    self.logger.error(f"Failed to connect to PostgreSQL after {retries} attempts.")
+                    raise ConnectionError(f"PostgreSQL connection failed: {e}")
+        return False
     
     async def disconnect(self) -> None:
         """Close connection pool."""

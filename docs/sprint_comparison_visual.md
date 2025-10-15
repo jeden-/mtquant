@@ -542,3 +542,4 @@ PRODUKCJA (połowa listopada 2025)
 **Autor:** MTQuant Development Team  
 **Status:** Sprint 3 w trakcie (~85% ukończenia)
 
+

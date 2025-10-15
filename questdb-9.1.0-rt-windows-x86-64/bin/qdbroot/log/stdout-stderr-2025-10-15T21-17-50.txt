@@ -1,0 +1,1 @@
+Reading log configuration from C:\Users\win\Documents\mtquant\questdb-9.1.0-rt-windows-x86-64\bin\qdbroot\conf\log.conf
