@@ -395,6 +395,9 @@ class HierarchicalTradingSystem:
         """
         orders = []
         
+        if specialist_actions is None:
+            return orders
+        
         for specialist_id, actions_data in specialist_actions.items():
             actions = actions_data['actions']
             allocation = actions_data['allocation']
@@ -423,7 +426,7 @@ class HierarchicalTradingSystem:
                     side=side,
                     order_type='market',
                     quantity=position_size,
-                    timestamp=datetime.utcnow()
+                    signal=actions_data.get('signal', 0.0)
                 )
                 
                 orders.append(order)
@@ -491,8 +494,8 @@ class HierarchicalTradingSystem:
             'statistics': self.stats,
             'specialists': {
                 specialist_id: {
-                    'type': specialist.specialist_type,
-                    'instruments': specialist.instruments,
+                    'type': getattr(specialist, 'specialist_type', 'unknown'),
+                    'instruments': getattr(specialist, 'instruments', []),
                     'status': 'active'
                 }
                 for specialist_id, specialist in self.specialists.items()

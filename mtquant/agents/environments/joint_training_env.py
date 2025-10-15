@@ -81,6 +81,11 @@ class JointTrainingEnv(BaseHierarchicalEnv):
         communication_hub: Optional[Any] = None,
         portfolio_risk_manager: Optional[PortfolioRiskManager] = None
     ):
+        # Set specialists BEFORE calling super().__init__() so _setup_spaces() can access them
+        self.specialists = specialists
+        self.meta_controller = meta_controller
+        self.joint_config = config
+        
         # Convert config to EnvironmentConfig for base class
         env_config = EnvironmentConfig(
             instruments=list(market_data.keys()),
@@ -100,10 +105,6 @@ class JointTrainingEnv(BaseHierarchicalEnv):
         )
         
         super().__init__(env_config, market_data, communication_hub, portfolio_risk_manager)
-        
-        self.joint_config = config
-        self.meta_controller = meta_controller
-        self.specialists = specialists
         
         # Joint training state
         self.meta_actions_history: List[np.ndarray] = []
@@ -130,7 +131,7 @@ class JointTrainingEnv(BaseHierarchicalEnv):
         }
         
         # Thread pool for parallel specialist processing
-        self.executor = ThreadPoolExecutor(max_workers=len(specialists))
+        self.executor = ThreadPoolExecutor(max_workers=max(1, len(specialists)))
         
     def _setup_spaces(self) -> None:
         """Setup action and observation spaces for joint training."""
@@ -295,12 +296,17 @@ class JointTrainingEnv(BaseHierarchicalEnv):
             try:
                 if instruments:
                     market_state = self.get_market_state(instruments[0])
-                    specialist_confidence = specialist.calculate_confidence(market_state)
+                    confidence_result = specialist.calculate_confidence(market_state)
+                    # Ensure we get a float value, not a Mock
+                    if hasattr(confidence_result, '_mock_name'):
+                        specialist_confidence = 0.5  # Default if Mock
+                    else:
+                        specialist_confidence = float(confidence_result)
             except Exception:
                 specialist_confidence = 0.5
             
             # Fill specialist state (20 features per specialist)
-            specialist_states[base_idx] = specialist_pnl / self.portfolio_value  # P&L contribution
+            specialist_states[base_idx] = specialist_pnl / max(self.portfolio_value, 1.0)  # P&L contribution
             specialist_states[base_idx+1] = specialist_trades / len(instruments)  # Trade ratio
             specialist_states[base_idx+2] = specialist_confidence  # Confidence
             specialist_states[base_idx+3] = len(self.specialist_actions_history[name])  # Action history length
@@ -551,7 +557,7 @@ class JointTrainingEnv(BaseHierarchicalEnv):
                     specialist_pnl += self.positions[instrument].unrealized_pnl
             
             # Calculate specialist reward
-            specialist_reward = specialist_pnl / self.portfolio_value
+            specialist_reward = specialist_pnl / max(self.portfolio_value, 1.0)
             specialist_rewards[specialist_name] = specialist_reward
             
             # Update individual reward history

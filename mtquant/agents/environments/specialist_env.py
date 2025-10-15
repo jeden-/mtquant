@@ -15,6 +15,7 @@ from .hierarchical_env import BaseHierarchicalEnv, EnvironmentConfig
 from ..hierarchical.base_specialist import BaseSpecialist
 from ..hierarchical.communication import AllocationMessage, PerformanceReport
 from ...risk_management.position_sizer import PositionSizer
+from ...mcp_integration.models.order import Order
 
 
 class SpecialistEnv(BaseHierarchicalEnv):
@@ -39,8 +40,7 @@ class SpecialistEnv(BaseHierarchicalEnv):
         communication_hub: Optional[Any] = None,
         portfolio_risk_manager: Optional[Any] = None
     ):
-        super().__init__(config, market_data, communication_hub, portfolio_risk_manager)
-        
+        # Initialize specialist-specific attributes BEFORE calling super().__init__
         self.specialist = specialist
         self.specialist_instruments = specialist.get_instruments()
         
@@ -54,6 +54,9 @@ class SpecialistEnv(BaseHierarchicalEnv):
         # Performance tracking
         self.specialist_pnl_history: List[float] = []
         self.trade_frequency_history: List[float] = []
+        
+        # Now call super().__init__ which will call _setup_spaces
+        super().__init__(config, market_data, communication_hub, portfolio_risk_manager)
         
     def _setup_spaces(self) -> None:
         """Setup action and observation spaces for specialist."""
@@ -306,8 +309,8 @@ class SpecialistEnv(BaseHierarchicalEnv):
                 specialist_exposure += abs(position.quantity * position.current_price)
         
         portfolio_state[0] = specialist_positions / len(self.specialist_instruments)  # Position ratio
-        portfolio_state[1] = specialist_pnl / self.portfolio_value  # P&L contribution
-        portfolio_state[2] = specialist_exposure / self.portfolio_value  # Exposure ratio
+        portfolio_state[1] = specialist_pnl / max(self.portfolio_value, 1.0)  # P&L contribution
+        portfolio_state[2] = specialist_exposure / max(self.portfolio_value, 1.0)  # Exposure ratio
         portfolio_state[3] = len(self.specialist_pnl_history) / max(self.current_step, 1)  # History length
         
         # Recent performance
@@ -342,12 +345,15 @@ class SpecialistEnv(BaseHierarchicalEnv):
             # Convert signal to order if significant
             if abs(signal) > 0.1:  # Threshold for trading
                 # Calculate position size based on signal strength
-                position_size = self.position_sizer.calculate(
+                position_size_result = self.position_sizer.calculate(
                     signal=signal,
                     portfolio_equity=self.portfolio_value,
                     instrument_volatility=self._get_instrument_volatility(instrument),
                     method='volatility'
                 )
+                
+                # Extract position size from result
+                position_size = position_size_result.position_size
                 
                 # Create order
                 order = Order(
@@ -358,7 +364,8 @@ class SpecialistEnv(BaseHierarchicalEnv):
                     order_type='market',
                     quantity=abs(position_size),
                     price=None,  # Market order
-                    status='pending'
+                    status='pending',
+                    signal=signal
                 )
                 
                 orders.append(order)
@@ -403,13 +410,13 @@ class SpecialistEnv(BaseHierarchicalEnv):
         # Calculate P&L-based reward
         if len(self.specialist_pnl_history) > 1:
             pnl_change = self.specialist_pnl_history[-1] - self.specialist_pnl_history[-2]
-            reward = pnl_change / self.portfolio_value
+            reward = pnl_change / max(self.portfolio_value, 1.0)
         else:
             reward = 0.0
         
         # Transaction cost penalty
         total_transaction_cost = sum(order.transaction_cost for order in executed_orders)
-        transaction_penalty = total_transaction_cost / self.portfolio_value
+        transaction_penalty = total_transaction_cost / max(self.portfolio_value, 1.0)
         reward -= self.config.transaction_cost_weight * transaction_penalty
         
         # Confidence bonus

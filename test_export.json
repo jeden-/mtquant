@@ -1,0 +1,34 @@
+{
+  "export_timestamp": "2025-10-15T09:59:17.388025",
+  "system_status": {
+    "system_id": "hierarchical_system",
+    "timestamp": "2025-10-15T09:59:17.388025",
+    "training_mode": false,
+    "risk_enabled": true,
+    "statistics": {
+      "total_decisions": 0,
+      "orders_executed": 0,
+      "orders_rejected": 0,
+      "risk_violations": 0,
+      "avg_decision_time_ms": 0.0,
+      "last_decision_time": null
+    },
+    "specialists": {
+      "forex": {
+        "type": "forex",
+        "instruments": [
+          "EURUSD"
+        ],
+        "status": "active"
+      }
+    },
+    "communication_stats": "<Mock name='mock.get_statistics()' id='2648320278048'>",
+    "current_state": {
+      "test": "data"
+    }
+  },
+  "current_state": {
+    "test": "data"
+  },
+  "recent_history": []
+}

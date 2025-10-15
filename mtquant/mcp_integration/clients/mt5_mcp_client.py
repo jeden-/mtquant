@@ -114,18 +114,14 @@ class MT5MCPClient:
         
         # MCP server parameters
         # Use global Python 3.11 directly
+        # Note: env variables will be passed during login call instead
         self.server_params = StdioServerParameters(
             command="py",
             args=[
                 "-3.11",
                 "-c",
                 f"import sys; sys.path.insert(0, r'{config['mcp_server_path']}/src'); from mcp_mt5 import main; main()"
-            ],
-            env={
-                "MT5_ACCOUNT": str(config['account']),
-                "MT5_PASSWORD": config['password'],
-                "MT5_SERVER": config['server']
-            }
+            ]
         )
         
         self.logger.info(f"MT5MCPClient initialized for broker: {broker_id}")

@@ -228,7 +228,7 @@ class CurriculumLearningWrapper:
         curriculum_config: Dict[str, Any]
     ):
         self.parallel_wrapper = parallel_wrapper
-        self.curriculum_config = curriculum
+        self.curriculum_config = curriculum_config
         
         # Curriculum phases
         self.phases = {

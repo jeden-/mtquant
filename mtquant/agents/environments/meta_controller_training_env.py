@@ -73,6 +73,11 @@ class MetaControllerTrainingEnv(BaseHierarchicalEnv):
         communication_hub: Optional[Any] = None,
         portfolio_risk_manager: Optional[PortfolioRiskManager] = None
     ):
+        # Set specialists BEFORE calling super().__init__() so _setup_spaces() can access them
+        self.meta_config = config
+        self.meta_controller = meta_controller
+        self.specialists = specialists
+        
         # Convert config to EnvironmentConfig for base class
         env_config = EnvironmentConfig(
             instruments=list(market_data.keys()),
@@ -92,10 +97,6 @@ class MetaControllerTrainingEnv(BaseHierarchicalEnv):
         )
         
         super().__init__(env_config, market_data, communication_hub, portfolio_risk_manager)
-        
-        self.meta_config = config
-        self.meta_controller = meta_controller
-        self.specialists = specialists
         
         # Meta-controller specific state
         self.specialist_performance_history: Dict[str, List[float]] = {
@@ -276,7 +277,7 @@ class MetaControllerTrainingEnv(BaseHierarchicalEnv):
             
             # Fill report (15 metrics per specialist)
             base_idx = i * 15
-            reports[base_idx] = specialist_pnl / self.portfolio_value  # P&L contribution
+            reports[base_idx] = specialist_pnl / max(self.portfolio_value, 1.0)  # P&L contribution
             reports[base_idx+1] = specialist_trades / len(instruments)  # Trade ratio
             reports[base_idx+2] = confidence  # Confidence
             reports[base_idx+3] = len(self.specialist_performance_history[name])  # History length
@@ -423,21 +424,21 @@ class MetaControllerTrainingEnv(BaseHierarchicalEnv):
         self.allocation_history.append(allocation.copy())
         self.risk_appetite_history.append(risk_appetite)
         
-        # Create allocation message
+        # Create allocation message for each specialist
         specialist_names = list(self.specialists.keys())
-        allocation_message = AllocationMessage(
-            message_id=f"alloc_{self.current_step}",
-            sender_id="meta_controller",
-            timestamp=pd.Timestamp.now(),
-            allocations={
-                specialist_names[i]: allocation[i] for i in range(len(specialist_names))
-            },
-            risk_appetite=risk_appetite,
-            total_capital=self.portfolio_value
-        )
+        allocation_messages = []
+        for i, specialist_name in enumerate(specialist_names):
+            allocation_message = AllocationMessage(
+                specialist_id=specialist_name,
+                allocation=allocation[i],
+                risk_appetite=risk_appetite,
+                market_regime="neutral"  # Default market regime
+            )
+            allocation_messages.append(allocation_message)
         
         # Send to communication hub
-        self.communication_hub.send_message(allocation_message)
+        for allocation_message in allocation_messages:
+            self.communication_hub.send_message(allocation_message)
         
         # For meta-controller training, we don't execute actual trades
         # Instead, we simulate specialist responses and calculate rewards

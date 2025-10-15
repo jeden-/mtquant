@@ -704,4 +704,54 @@ class RedisClient:
     def is_connected(self) -> bool:
         """Check if connected."""
         return self._connected and self._client is not None
+    
+    async def get_metric(self, metric_name: str, agent_id: Optional[str] = None) -> Optional[float]:
+        """
+        Get real-time metric value.
+        
+        Args:
+            metric_name: Metric name
+            agent_id: Optional agent ID filter
+            
+        Returns:
+            Metric value or None if not found
+        """
+        key = f"metric:{metric_name}"
+        if agent_id:
+            key = f"metric:{agent_id}:{metric_name}"
+        
+        try:
+            value = await self._client.get(key)
+            return float(value) if value else None
+        
+        except Exception as e:
+            self.logger.error(f"Failed to get metric '{metric_name}': {e}")
+            return None
+    
+    async def set_metric(
+        self,
+        metric_name: str,
+        value: float,
+        agent_id: Optional[str] = None,
+        ttl: int = 3600
+    ) -> None:
+        """
+        Set real-time metric value.
+        
+        Args:
+            metric_name: Metric name
+            value: Metric value
+            agent_id: Optional agent ID
+            ttl: Time to live in seconds (default 1 hour)
+        """
+        key = f"metric:{metric_name}"
+        if agent_id:
+            key = f"metric:{agent_id}:{metric_name}"
+        
+        try:
+            await self._client.setex(key, ttl, str(value))
+        
+        except Exception as e:
+            self.logger.error(f"Failed to set metric '{metric_name}': {e}")
+            raise DatabaseError(f"Failed to set metric: {e}")
 

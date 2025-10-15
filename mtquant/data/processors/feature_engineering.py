@@ -420,7 +420,7 @@ class ForexFeatureEngineer(BaseFeatureEngineer):
                 df = self._add_forex_features(df)
                 
                 # Cross-currency features
-                df = self._add_cross_currency_features(df, data)
+                df = self._add_cross_currency_features(df, data, instrument)
                 
                 # Normalize features
                 feature_columns = self._get_feature_columns(df)
@@ -485,13 +485,13 @@ class ForexFeatureEngineer(BaseFeatureEngineer):
         session_vol = returns.rolling(4).std()  # 4-hour sessions
         return session_vol.fillna(0)
     
-    def _add_cross_currency_features(self, df: pd.DataFrame, all_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    def _add_cross_currency_features(self, df: pd.DataFrame, all_data: Dict[str, pd.DataFrame], current_instrument: str) -> pd.DataFrame:
         """Add cross-currency correlation features."""
         
         # Calculate correlations with other Forex pairs
         correlations = {}
         for other_instrument in self.forex_instruments:
-            if other_instrument in all_data and other_instrument != df.name:
+            if other_instrument in all_data and other_instrument != current_instrument:
                 other_returns = all_data[other_instrument]['close'].pct_change()
                 corr = df['close'].pct_change().rolling(20).corr(other_returns)
                 correlations[f'corr_{other_instrument}'] = corr
@@ -550,7 +550,7 @@ class CommodityFeatureEngineer(BaseFeatureEngineer):
                 df = self._add_commodity_features(df)
                 
                 # Cross-commodity features
-                df = self._add_cross_commodity_features(df, data)
+                df = self._add_cross_commodity_features(df, data, instrument)
                 
                 # Normalize features
                 feature_columns = self._get_feature_columns(df)
@@ -615,13 +615,13 @@ class CommodityFeatureEngineer(BaseFeatureEngineer):
         vol_clustering = returns.rolling(5).std() / returns.rolling(20).std()
         return vol_clustering.fillna(1)
     
-    def _add_cross_commodity_features(self, df: pd.DataFrame, all_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    def _add_cross_commodity_features(self, df: pd.DataFrame, all_data: Dict[str, pd.DataFrame], current_instrument: str) -> pd.DataFrame:
         """Add cross-commodity correlation features."""
         
         # Calculate correlations with other commodities
         correlations = {}
         for other_instrument in self.commodity_instruments:
-            if other_instrument in all_data and other_instrument != df.name:
+            if other_instrument in all_data and other_instrument != current_instrument:
                 other_returns = all_data[other_instrument]['close'].pct_change()
                 corr = df['close'].pct_change().rolling(20).corr(other_returns)
                 correlations[f'corr_{other_instrument}'] = corr
@@ -680,7 +680,7 @@ class EquityFeatureEngineer(BaseFeatureEngineer):
                 df = self._add_equity_features(df)
                 
                 # Cross-equity features
-                df = self._add_cross_equity_features(df, data)
+                df = self._add_cross_equity_features(df, data, instrument)
                 
                 # Normalize features
                 feature_columns = self._get_feature_columns(df)
@@ -745,13 +745,13 @@ class EquityFeatureEngineer(BaseFeatureEngineer):
         risk_on_off = returns.rolling(20).mean() / volatility
         return risk_on_off.fillna(0)
     
-    def _add_cross_equity_features(self, df: pd.DataFrame, all_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    def _add_cross_equity_features(self, df: pd.DataFrame, all_data: Dict[str, pd.DataFrame], current_instrument: str) -> pd.DataFrame:
         """Add cross-equity correlation features."""
         
         # Calculate correlations with other equity indices
         correlations = {}
         for other_instrument in self.equity_instruments:
-            if other_instrument in all_data and other_instrument != df.name:
+            if other_instrument in all_data and other_instrument != current_instrument:
                 other_returns = all_data[other_instrument]['close'].pct_change()
                 corr = df['close'].pct_change().rolling(20).corr(other_returns)
                 correlations[f'corr_{other_instrument}'] = corr

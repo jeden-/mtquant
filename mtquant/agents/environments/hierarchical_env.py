@@ -95,11 +95,12 @@ class BaseHierarchicalEnv(gym.Env, ABC):
         self._setup_spaces()
         
         # Position sizer
-        self.position_sizer = PositionSizer(
-            max_position_pct=config.max_position_size,
-            kelly_fraction=0.25,
-            volatility_lookback=20
-        )
+        position_sizer_config = {
+            'max_position_pct': config.max_position_size,
+            'kelly_fraction': 0.25,
+            'volatility_lookback': 20
+        }
+        self.position_sizer = PositionSizer(position_sizer_config)
     
     def _validate_market_data(self) -> None:
         """Validate that all instruments have sufficient market data."""
@@ -171,6 +172,9 @@ class BaseHierarchicalEnv(gym.Env, ABC):
         # Calculate reward
         reward = self._calculate_reward(executed_orders)
         
+        # Update step counter
+        self.current_step += 1
+        
         # Check if episode is done
         done = self._is_done()
         truncated = False
@@ -178,9 +182,6 @@ class BaseHierarchicalEnv(gym.Env, ABC):
         # Get next observation
         observation = self._get_observation()
         info = self._get_info()
-        
-        # Update step counter
-        self.current_step += 1
         
         return observation, reward, done, truncated, info
     

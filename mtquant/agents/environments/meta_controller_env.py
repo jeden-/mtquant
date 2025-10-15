@@ -7,6 +7,7 @@ by observing specialist performance and allocating capital accordingly.
 
 import numpy as np
 import torch
+import pandas as pd
 from typing import Dict, List, Tuple, Optional, Any
 import gymnasium as gym
 from gymnasium import spaces
@@ -41,10 +42,11 @@ class MetaControllerEnv(BaseHierarchicalEnv):
         communication_hub: Optional[Any] = None,
         portfolio_risk_manager: Optional[PortfolioRiskManager] = None
     ):
-        super().__init__(config, market_data, communication_hub, portfolio_risk_manager)
-        
+        # Set specialists BEFORE calling super().__init__() so _setup_spaces() can access them
         self.meta_controller = meta_controller
         self.specialists = specialists
+        
+        super().__init__(config, market_data, communication_hub, portfolio_risk_manager)
         
         # Meta-controller specific state
         self.specialist_performance: Dict[str, List[float]] = {
@@ -151,7 +153,7 @@ class MetaControllerEnv(BaseHierarchicalEnv):
             if instrument in self.positions:
                 position = self.positions[instrument]
                 instrument_metrics[i*4] = position.quantity / self.config.max_position_size  # Position size
-                instrument_metrics[i*4+1] = position.unrealized_pnl / self.portfolio_value  # P&L contribution
+                instrument_metrics[i*4+1] = position.unrealized_pnl / max(self.portfolio_value, 1.0)  # P&L contribution
                 instrument_metrics[i*4+2] = (position.current_price - position.entry_price) / position.entry_price  # Price change
                 instrument_metrics[i*4+3] = 1.0  # Position exists
             else:
@@ -205,7 +207,7 @@ class MetaControllerEnv(BaseHierarchicalEnv):
             
             # Fill report (10 metrics per specialist)
             base_idx = i * 10
-            reports[base_idx] = specialist_pnl / self.portfolio_value  # P&L contribution
+            reports[base_idx] = specialist_pnl / max(self.portfolio_value, 1.0)  # P&L contribution
             reports[base_idx+1] = specialist_trades / len(instruments)  # Trade ratio
             reports[base_idx+2] = confidence  # Confidence
             reports[base_idx+3] = len(self.specialist_performance[name])  # History length
@@ -308,14 +310,10 @@ class MetaControllerEnv(BaseHierarchicalEnv):
         # Create allocation message
         specialist_names = list(self.specialists.keys())
         allocation_message = AllocationMessage(
-            message_id=f"alloc_{self.current_step}",
-            sender_id="meta_controller",
-            timestamp=pd.Timestamp.now(),
-            allocations={
-                specialist_names[i]: allocation[i] for i in range(len(specialist_names))
-            },
+            specialist_id="meta_controller",
+            allocation=allocation[0],  # Use first specialist allocation as example
             risk_appetite=risk_appetite,
-            total_capital=self.portfolio_value
+            market_regime="neutral"  # Default market regime
         )
         
         # Send to communication hub

@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - Transactional Data
+  postgres:
+    image: postgres:15-alpine
+    container_name: mtquant-postgres
+    environment:
+      POSTGRES_USER: mtquant_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mtquant_password}
+      POSTGRES_DB: mtquant
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mtquant_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mtquant-network
+
+  # QuestDB - Time-Series Data
+  questdb:
+    image: questdb/questdb:latest
+    container_name: mtquant-questdb
+    ports:
+      - "9000:9000"   # REST API & Web Console
+      - "9009:9009"   # ILP (InfluxDB Line Protocol)
+      - "8812:8812"   # PostgreSQL wire protocol
+    volumes:
+      - questdb_data:/root/.questdb
+    environment:
+      QDB_CAIRO_COMMIT_LAG: 1000
+      QDB_PG_USER: admin
+      QDB_PG_PASSWORD: ${QUESTDB_PASSWORD:-quest}
+    networks:
+      - mtquant-network
+
+  # Redis - Hot Data & Caching
+  redis:
+    image: redis:7-alpine
+    container_name: mtquant-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mtquant-network
+
+  # Backend API
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: mtquant-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Database connections
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: mtquant
+      POSTGRES_USER: mtquant_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mtquant_password}
+      
+      QUESTDB_HOST: questdb
+      QUESTDB_PORT: 9000
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      
+      # Application settings
+      PYTHONPATH: /app
+      LOG_LEVEL: INFO
+    volumes:
+      - ../config:/app/config:ro
+      - ../logs:/app/logs
+      - ../models:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      questdb:
+        condition: service_started
+    networks:
+      - mtquant-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: mtquant-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - mtquant-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  questdb_data:
+  redis_data:
+
+networks:
+  mtquant-network:
+    driver: bridge
+

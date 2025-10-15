@@ -724,4 +724,40 @@ class PostgreSQLClient:
     def is_connected(self) -> bool:
         """Check if connected."""
         return self._connected and self._pool is not None
+    
+    async def get_open_positions(self) -> List[Dict[str, Any]]:
+        """
+        Get all open positions.
+        
+        Returns:
+            List of open positions
+        """
+        query = """
+            SELECT 
+                position_id,
+                agent_id,
+                symbol,
+                side,
+                quantity,
+                entry_price,
+                current_price,
+                unrealized_pnl,
+                realized_pnl,
+                stop_loss,
+                take_profit,
+                opened_at,
+                updated_at
+            FROM positions
+            WHERE status = 'open'
+            ORDER BY opened_at DESC
+        """
+        
+        try:
+            async with self._pool.acquire() as conn:
+                rows = await conn.fetch(query)
+                return [dict(row) for row in rows]
+        
+        except Exception as e:
+            self.logger.error(f"Failed to get open positions: {e}")
+            raise QueryError(f"Failed to get open positions: {e}")
 
