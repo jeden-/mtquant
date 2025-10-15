@@ -17,7 +17,6 @@ export default function Dashboard() {
   })
 
   const activeAgents = agents?.filter((a) => a.status === 'live').length || 0
-  const totalPnL = agents?.reduce((sum, a) => sum + a.unrealized_pnl, 0) || 0
 
   return (
     <div className="space-y-6">

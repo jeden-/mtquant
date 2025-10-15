@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { metricsAPI } from '@/services/api'
-import { Activity, TrendingUp, TrendingDown } from 'lucide-react'
-import clsx from 'clsx'
+import { Activity } from 'lucide-react'
 
 export default function Header() {
   const { data: metrics } = useQuery({

@@ -1,7 +1,31 @@
 # MTQuant Backend Dockerfile
 # Production-ready Python 3.11+ FastAPI application
 
+# Stage 1: Build TA-Lib
+FROM python:3.11-slim as ta-lib-builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    build-essential \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and compile TA-Lib
+WORKDIR /tmp
+RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
+    tar -xzf ta-lib-0.4.0-src.tar.gz && \
+    cd ta-lib/ && \
+    ./configure --prefix=/usr && \
+    make && \
+    make install
+
+# Stage 2: Final Application Image
 FROM python:3.11-slim
+
+# Copy compiled TA-Lib libraries from builder stage
+COPY --from=ta-lib-builder /usr/lib/libta_lib* /usr/lib/
+COPY --from=ta-lib-builder /usr/include/ta-lib/* /usr/include/
 
 # Set working directory
 WORKDIR /app
