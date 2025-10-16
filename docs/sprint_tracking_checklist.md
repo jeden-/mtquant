@@ -112,8 +112,8 @@
 
 - [x] **DAY 3 - Specialist Implementations**
   - [x] `forex_specialist.py` (EUR, GBP, JPY)
-  - [x] `commodities_specialist.py` (XAU, WTI)
-  - [x] `equity_specialist.py` (SPX, NAS, US30)
+  - [x] `commodities_specialist.py` (XAU, WTIUSD)
+  - [x] `equity_specialist.py` (SPX500, NAS100, US30)
   - [x] `specialist_factory.py`
 
 - [x] **DAY 4-5 - Hierarchical Environments**

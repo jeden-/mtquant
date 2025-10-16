@@ -67,6 +67,11 @@ config/secrets.yaml
 *.sqlite
 *.sqlite3
 
+# QuestDB binaries (too large for GitHub)
+questdb-*/
+*.tar.gz
+questdb.tar.gz
+
 # Model checkpoints
 models/checkpoints/
 models/trained/

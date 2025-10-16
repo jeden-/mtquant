@@ -15,7 +15,7 @@ const api = axios.create({
 export const agentAPI = {
   getAll: async (): Promise<Agent[]> => {
     const { data } = await api.get('/agents')
-    return data
+    return data.agents || [] // Extract agents array from response
   },
 
   getById: async (id: string): Promise<Agent> => {

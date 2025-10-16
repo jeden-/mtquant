@@ -6,8 +6,10 @@ price_bands:
   EURUSD: 0.02    # 2% price band for major forex
   GBPUSD: 0.02
   USDJPY: 0.02
-  BTCUSD: 0.10    # 10% price band for crypto
-  SPX: 0.03       # 3% price band for indices
+  WTIUSD: 0.05
+  SPX500: 0.03    # 3% price band for indices
+  NAS100: 0.03
+  US30: 0.03
   default: 0.05   # Default 5% for other instruments
 
 # Position sizing limits
@@ -47,8 +49,7 @@ regulatory:
   max_leverage: 30            # Maximum leverage allowed
   trading_hours:
     forex: "24/5"            # Forex trading hours
-    crypto: "24/7"           # Crypto trading hours
-    indices: "9:30-16:00"    # US market hours
+    indices: "24/5"          # Indices trading hours (CFDs vary)
 
 # Symbol-specific limits
 symbol_limits:
@@ -61,10 +62,35 @@ symbol_limits:
     max_quantity: 10000
     min_quantity: 0.01
     margin_requirement: 0.02
-  
-  BTCUSD:
-    max_quantity: 100
-    min_quantity: 0.001
+
+  GBPUSD:
+    max_quantity: 10000
+    min_quantity: 0.01
+    margin_requirement: 0.02
+
+  USDJPY:
+    max_quantity: 10000
+    min_quantity: 0.01
+    margin_requirement: 0.02
+
+  WTIUSD:
+    max_quantity: 5000
+    min_quantity: 0.01
+    margin_requirement: 0.02
+
+  SPX500:
+    max_quantity: 500
+    min_quantity: 0.01
+    margin_requirement: 0.05
+
+  NAS100:
+    max_quantity: 500
+    min_quantity: 0.01
+    margin_requirement: 0.05
+
+  US30:
+    max_quantity: 500
+    min_quantity: 0.01
     margin_requirement: 0.05
 
 # Correlation matrix for risk checks
@@ -77,11 +103,12 @@ correlation_matrix:
   # Gold correlations
   XAUUSD_EURUSD: -0.7
   XAUUSD_USDJPY: -0.3
-  XAUUSD_SPX: -0.4
-  
-  # Crypto correlations
-  BTCUSD_ETHUSD: 0.8
-  BTCUSD_SPX: 0.3
+  XAUUSD_SPX500: -0.4
+
+  # Indices correlations
+  SPX500_NAS100: 0.9
+  SPX500_US30: 0.8
+  NAS100_US30: 0.75
 
 # Risk monitoring
 monitoring:

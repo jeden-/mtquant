@@ -870,7 +870,7 @@ pytest tests/performance/ -v -s
 4. Alert system integration pending (email, SMS, Discord)
 
 ## Next Sprint (Sprint 3) Recommendations
-1. Expand to 8 instruments (add EURUSD, GBPUSD, SPX, ETHUSD, WTI)
+1. Expand to 8 instruments (add EURUSD, GBPUSD, SPX500, WTIUSD, NAS100, US30)
 2. Implement Central Risk Manager for multi-agent coordination
 3. Add React UI (dashboard, charts, real-time updates)
 4. Paper trading validation (30 days)

@@ -9,7 +9,7 @@
 
 ## 🎯 Przegląd Architektury
 
-MTQuant to system wieloagentowy, gdzie każdy agent RL jest odpowiedzialny za jeden instrument finansowy (XAUUSD, BTCUSD, USDJPY, EURUSD). Centralny Menedżer Ryzyka koordynuje wszystkie agenty i egzekwuje limity na poziomie portfela.
+MTQuant to system wieloagentowy, gdzie każdy agent RL jest odpowiedzialny za jeden instrument finansowy (EURUSD, GBPUSD, USDJPY, XAUUSD, WTIUSD, SPX500, NAS100, US30). Centralny Menedżer Ryzyka koordynuje wszystkie agenty i egzekwuje limity na poziomie portfela.
 
 ### Kluczowe Komponenty
 
@@ -171,7 +171,7 @@ npm run dev
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   XAUUSD Agent  │    │   BTCUSD Agent  │    │   USDJPY Agent  │
+│   XAUUSD Agent  │    │   EURUSD Agent  │    │   USDJPY Agent  │
 │   (PPO Policy)   │    │   (SAC Policy)  │    │   (TD3 Policy)  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
@@ -239,9 +239,13 @@ npm run dev
 | Instrument | Typ | Sesja | Średni Spread | Dzienna Zmienność |
 |------------|-----|-------|---------------|-------------------|
 | XAUUSD | Commodity | 24/5 | 0.30 USD | 20.0 USD |
-| BTCUSD | Crypto | 24/7 | 5.0 USD | 1000.0 USD |
+| WTIUSD | Commodity | 24/5 | 0.05 USD | 2.0 USD |
 | USDJPY | Forex | 24/5 | 0.1 pips | 0.80% |
 | EURUSD | Forex | 24/5 | 0.1 pips | 0.70% |
+| GBPUSD | Forex | 24/5 | 0.1 pips | 0.90% |
+| SPX500 | Index | 24/5 | 0.25 USD | 15.0 USD |
+| NAS100 | Index | 24/5 | 0.20 USD | 12.0 USD |
+| US30 | Index | 24/5 | 1.0 USD | 50.0 USD |
 
 ## 🔒 Bezpieczeństwo i Zgodność
 

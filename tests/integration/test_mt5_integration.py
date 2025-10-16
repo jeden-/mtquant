@@ -195,7 +195,7 @@ async def test_symbol_mapping(mt5_adapter):
     adapter = await mt5_adapter()
     
     # Test standard symbols
-    test_symbols = ['XAUUSD', 'BTCUSD', 'USDJPY', 'EURUSD']
+    test_symbols = ['XAUUSD', 'USDJPY', 'EURUSD', 'GBPUSD']
     
     for symbol in test_symbols:
         try:

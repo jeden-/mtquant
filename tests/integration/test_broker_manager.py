@@ -293,7 +293,7 @@ async def test_symbol_mapping_end_to_end(broker_manager):
     manager = await broker_manager()
     
     # Test standard symbols
-    test_symbols = ['XAUUSD', 'BTCUSD', 'USDJPY', 'EURUSD']
+    test_symbols = ['XAUUSD', 'USDJPY', 'EURUSD', 'GBPUSD']
     successful_symbols = []
     
     for symbol in test_symbols:

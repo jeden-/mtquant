@@ -1496,7 +1496,7 @@ MTQuant Application (Python)
 ```
 
 ### Next Steps (Sprint 2)
-1. Expand to 8 instruments (XAUUSD, BTCUSD, USDJPY, EURUSD, GBPUSD, SPX, ETHUSD, WTI)
+1. Expand to 8 instruments (XAUUSD, USDJPY, EURUSD, GBPUSD, SPX500, WTIUSD, NAS100, US30)
 2. Multi-agent training (one agent per instrument)
 3. Central Risk Manager coordination
 4. React UI development (dashboard, charts)

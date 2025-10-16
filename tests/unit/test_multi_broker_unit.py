@@ -74,7 +74,7 @@ class TestSymbolMapper:
         """Test retrieval of all standard symbols."""
         symbols = SymbolMapper.get_all_standard_symbols()
         assert 'XAUUSD' in symbols
-        assert 'BTCUSD' in symbols
+        assert 'SPX500' in symbols
         assert 'EURUSD' in symbols
         assert 'USDJPY' in symbols
         assert len(symbols) >= 4
@@ -91,7 +91,7 @@ class TestSymbolMapper:
     def test_validate_symbol(self):
         """Test symbol validation."""
         assert SymbolMapper.validate_symbol('XAUUSD') is True
-        assert SymbolMapper.validate_symbol('BTCUSD') is True
+        assert SymbolMapper.validate_symbol('SPX500') is True
         assert SymbolMapper.validate_symbol('UNKNOWN') is False
         assert SymbolMapper.validate_symbol('') is False
 

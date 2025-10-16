@@ -161,8 +161,8 @@ class EquitySpecialist(BaseSpecialist):
         declining_stocks = market_data.get('declining_stocks', 1500)
         market_breadth = advancing_stocks / (advancing_stocks + declining_stocks)
         
-        # Get P/E ratio for SPX
-        spx_pe_ratio = market_data.get('spx_pe_ratio', 20.0)
+        # Get P/E ratio for SPX500
+        spx_pe_ratio = market_data.get('spx500_pe_ratio', 20.0)
         
         # Detect earnings season phase
         earnings_season_phase = market_data.get('earnings_season_phase', 0.5)  # 0=off-season, 1=peak season

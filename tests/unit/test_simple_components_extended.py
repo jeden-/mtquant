@@ -176,7 +176,7 @@ class TestFeatureEngineeringSimple:
     
     def test_create_sample_data_empty_periods(self):
         """Test sample data creation with zero periods."""
-        data = create_sample_data(symbol="BTCUSD", periods=0)
+        data = create_sample_data(symbol="EURUSD", periods=0)
         
         assert isinstance(data, pd.DataFrame)
         assert len(data) == 0
@@ -334,15 +334,15 @@ class TestOrderModel:
     def test_order_creation_minimal(self):
         """Test order creation with minimal required fields."""
         order = Order(
-            agent_id="crypto_agent",
-            symbol="BTCUSD",
+            agent_id="fx_agent",
+            symbol="EURUSD",
             side="buy",
             order_type="market",
             quantity=0.01,
             signal=0.5
         )
         
-        assert order.symbol == "BTCUSD"
+        assert order.symbol == "EURUSD"
         assert order.side == "buy"
         assert order.order_type == "market"
         assert order.quantity == 0.01

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The MTQuant RL Agent system uses Proximal Policy Optimization (PPO) to train intelligent trading agents that can adapt to changing market conditions. Each agent is specialized for a specific instrument (XAUUSD, BTCUSD, etc.) and learns optimal trading strategies through interaction with a realistic trading environment.
+The MTQuant RL Agent system uses Proximal Policy Optimization (PPO) to train intelligent trading agents that can adapt to changing market conditions. Each agent is specialized for a specific instrument (EURUSD, GBPUSD, USDJPY, XAUUSD, WTIUSD, SPX500, NAS100, US30) and learns optimal trading strategies through interaction with a realistic trading environment.
 
 ## Architecture
 

@@ -9,6 +9,7 @@ from api.routes.portfolio import router as portfolio_router, initialize_portfoli
 from api.routes.orders import router as orders_router, initialize_order_routes
 from api.routes.websocket import router as websocket_router, initialize_websocket_routes
 from api.routes.metrics import router as metrics_router, initialize_metrics_routes
+from api.routes.brokers import router as brokers_router, initialize_broker_routes
 
 __version__ = "0.1.0"
 
@@ -18,9 +19,11 @@ __all__ = [
     "orders_router",
     "websocket_router",
     "metrics_router",
+    "brokers_router",
     "initialize_agent_routes",
     "initialize_portfolio_routes",
     "initialize_order_routes",
     "initialize_websocket_routes",
     "initialize_metrics_routes",
+    "initialize_broker_routes",
 ]

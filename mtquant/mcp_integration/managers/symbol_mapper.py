@@ -2,7 +2,7 @@
 Symbol Mapper for MTQuant Trading System
 
 This module provides centralized symbol mapping between standard symbols
-(e.g., XAUUSD, BTCUSD) and broker-specific symbols across different brokers.
+(e.g., XAUUSD, EURUSD) and broker-specific symbols across different brokers.
 
 The SymbolMapper loads mappings from config/symbols.yaml and provides
 methods for converting between standard and broker-specific symbols.
@@ -35,7 +35,7 @@ class SymbolMapper:
     Centralized symbol mapping between standard and broker-specific symbols.
     
     This class loads symbol mappings from config/symbols.yaml and provides
-    methods for converting between standard symbols (XAUUSD, BTCUSD, etc.)
+    methods for converting between standard symbols (XAUUSD, EURUSD, etc.)
     and broker-specific symbols (GOLD.pro, XAUUSDm, etc.).
     
     The class uses caching to avoid repeated YAML file reads and provides
@@ -81,7 +81,7 @@ class SymbolMapper:
         Convert standard symbol to broker-specific symbol.
         
         Args:
-            standard_symbol: Standard symbol (e.g., 'XAUUSD', 'BTCUSD')
+            standard_symbol: Standard symbol (e.g., 'XAUUSD', 'EURUSD')
             broker_id: Broker identifier (e.g., 'ic_markets', 'oanda')
             
         Returns:
@@ -169,7 +169,7 @@ class SymbolMapper:
         Get metadata for a standard symbol.
         
         Args:
-            symbol: Standard symbol (e.g., 'XAUUSD', 'BTCUSD')
+            symbol: Standard symbol (e.g., 'XAUUSD', 'EURUSD')
             
         Returns:
             Dictionary containing symbol metadata
@@ -231,7 +231,7 @@ class SymbolMapper:
         Example:
             >>> symbols = SymbolMapper.get_all_standard_symbols()
             >>> print(symbols)
-            ['XAUUSD', 'BTCUSD', 'USDJPY', 'EURUSD', ...]
+            ['XAUUSD', 'USDJPY', 'EURUSD', 'GBPUSD', 'WTIUSD', 'SPX500', 'NAS100', 'US30']
         """
         try:
             mappings = cls._load_config()

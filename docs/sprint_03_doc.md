@@ -42,7 +42,7 @@
 │  ┌──────────▼───┐  ┌──────▼────┐  ┌────────▼──┐    │
 │  │   FOREX      │  │ COMMODITIES│  │  EQUITY   │    │
 │  │  Specialist  │  │ Specialist │  │ Specialist│    │
-│  │ (EUR,GBP,JPY)│  │ (XAU, WTI) │  │(SPX,NAS,US)│   │
+│  │ (EUR,GBP,JPY)│  │ (XAU, WTIUSD) │  │(SPX500,NAS100,US30)│   │
 │  └──────┬───────┘  └─────┬──────┘  └─────┬─────┘    │
 │         │                │               │           │
 │  Level 3: INSTRUMENT AGENTS (Execution)              │
@@ -356,7 +356,7 @@ Requirements:
 
 3. Implement get_domain_features():
    - Calculate market breadth (advance/decline ratio)
-   - Get P/E ratio for SPX
+   - Get P/E ratio for SPX500
    - Detect earnings season phase
    - Fed policy stance (dovish/hawkish)
    - Equity volatility (VIX level)

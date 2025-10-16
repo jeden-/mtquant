@@ -13,17 +13,6 @@ XAUUSD:
     exness: "XAUUSDm"
     pepperstone: "XAUUSD"
 
-BTCUSD:
-  instrument_type: "crypto"
-  pip_value: 0.01
-  typical_spread: 5.0
-  trading_hours: "24/7"
-  broker_mappings:
-    ic_markets: "BTCUSD"
-    oanda: "BTC_USD"
-    exness: "BTCUSDm"
-    pepperstone: "BTCUSD"
-
 USDJPY:
   instrument_type: "forex"
   pip_value: 0.01
@@ -57,7 +46,7 @@ GBPUSD:
     exness: "GBPUSDm"
     pepperstone: "GBPUSD"
 
-SPX:
+SPX500:
   instrument_type: "index"
   pip_value: 0.1
   typical_spread: 0.5
@@ -68,18 +57,29 @@ SPX:
     exness: "US500m"
     pepperstone: "US500"
 
-ETHUSD:
-  instrument_type: "crypto"
-  pip_value: 0.01
-  typical_spread: 3.0
-  trading_hours: "24/7"
+NAS100:
+  instrument_type: "index"
+  pip_value: 0.1
+  typical_spread: 0.8
+  trading_hours: "24/5"
   broker_mappings:
-    ic_markets: "ETHUSD"
-    oanda: "ETH_USD"
-    exness: "ETHUSDm"
-    pepperstone: "ETHUSD"
+    ic_markets: "US100"
+    oanda: "NAS100_USD"
+    exness: "NAS100m"
+    pepperstone: "NAS100"
 
-WTI:
+US30:
+  instrument_type: "index"
+  pip_value: 0.1
+  typical_spread: 0.8
+  trading_hours: "24/5"
+  broker_mappings:
+    ic_markets: "US30"
+    oanda: "US30_USD"
+    exness: "US30m"
+    pepperstone: "US30"
+
+WTIUSD:
   instrument_type: "commodity"
   pip_value: 0.01
   typical_spread: 0.05

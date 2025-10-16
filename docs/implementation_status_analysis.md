@@ -135,8 +135,8 @@
 ✅ mtquant/agents/hierarchical/meta_controller.py - Meta-Controller (portfolio manager)
 ✅ mtquant/agents/hierarchical/base_specialist.py - bazowa klasa Specialist
 ✅ mtquant/agents/hierarchical/forex_specialist.py - Forex Specialist (EUR, GBP, JPY)
-✅ mtquant/agents/hierarchical/commodities_specialist.py - Commodities (XAU, WTI)
-✅ mtquant/agents/hierarchical/equity_specialist.py - Equity (SPX, NAS, US30)
+✅ mtquant/agents/hierarchical/commodities_specialist.py - Commodities (XAU, WTIUSD)
+✅ mtquant/agents/hierarchical/equity_specialist.py - Equity (SPX500, NAS100, US30)
 ✅ mtquant/agents/hierarchical/communication.py - komunikacja między agentami
 ✅ mtquant/agents/hierarchical/specialist_factory.py - factory pattern
 ✅ mtquant/agents/hierarchical/hierarchical_system.py - główny system

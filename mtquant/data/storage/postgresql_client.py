@@ -754,11 +754,9 @@ class PostgreSQLClient:
                 entry_price,
                 current_price,
                 unrealized_pnl,
-                realized_pnl,
-                stop_loss,
-                take_profit,
                 opened_at,
-                updated_at
+                updated_at,
+                status
             FROM positions
             WHERE status = 'open'
             ORDER BY opened_at DESC

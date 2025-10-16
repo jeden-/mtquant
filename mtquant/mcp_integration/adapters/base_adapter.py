@@ -127,7 +127,7 @@ class BrokerAdapter(ABC):
         Fetch market data.
         
         Args:
-            symbol: Standard symbol (e.g., XAUUSD, BTCUSD)
+            symbol: Standard symbol (e.g., EURUSD, XAUUSD)
             timeframe: Timeframe string
             bars: Number of bars to fetch
             

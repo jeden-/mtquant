@@ -2,7 +2,7 @@
 MTQuant - Multi-Agent AI Trading System using Reinforcement Learning
 
 A production-grade trading system that combines RL agents with centralized risk management
-for safe, automated trading across multiple instruments (XAUUSD, BTCUSD, USDJPY, EURUSD).
+for safe, automated trading across multiple instruments (EURUSD, GBPUSD, USDJPY, XAUUSD, WTIUSD, SPX500, NAS100, US30).
 
 Architecture:
 - Multi-Agent: Independent RL agents per instrument

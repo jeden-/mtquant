@@ -272,7 +272,7 @@ async def test_symbol_mapping_multi_broker(multi_broker_manager):
     from mtquant.mcp_integration.managers.symbol_mapper import SymbolMapper
     
     # Test symbol mapping for different brokers
-    test_symbols = ['XAUUSD', 'EURUSD', 'BTCUSD']
+    test_symbols = ['XAUUSD', 'EURUSD', 'SPX500']
     status = await multi_broker_manager.get_broker_status()
     
     for symbol in test_symbols:

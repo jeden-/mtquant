@@ -4,19 +4,39 @@ import { TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function Dashboard() {
-  const { data: portfolio } = useQuery({
+  const { data: portfolio, isLoading: portfolioLoading, error: portfolioError } = useQuery({
     queryKey: ['portfolio-summary'],
     queryFn: portfolioAPI.getSummary,
     refetchInterval: 5000,
   })
 
-  const { data: agents } = useQuery({
+  const { data: agents, isLoading: agentsLoading, error: agentsError } = useQuery({
     queryKey: ['agents'],
     queryFn: agentAPI.getAll,
     refetchInterval: 10000,
   })
 
   const activeAgents = agents?.filter((a) => a.status === 'live').length || 0
+
+  // Show loading state
+  if (portfolioLoading || agentsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (portfolioError || agentsError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500 text-xl">
+          Error loading dashboard: {portfolioError?.message || agentsError?.message}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

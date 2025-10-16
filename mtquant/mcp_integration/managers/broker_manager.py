@@ -68,8 +68,60 @@ class BrokerManager:
         self.symbol_mapper = SymbolMapper
         self.logger = get_logger(__name__)
         self._initialized = False
+        self._brokers = {}  # Store broker clients by ID
         
         self.logger.info("BrokerManager initialized")
+    
+    async def register_broker(self, broker_id: str, client: Any) -> None:
+        """
+        Register a broker client with the manager.
+        
+        Args:
+            broker_id: Unique broker identifier
+            client: MCP client instance (MT5MCPClient or MT4MCPClient)
+        """
+        try:
+            self._brokers[broker_id] = client
+            self.logger.info(f"✅ Registered broker: {broker_id}")
+        except Exception as e:
+            self.logger.error(f"Failed to register broker {broker_id}: {e}")
+            raise BrokerError(f"Broker registration failed: {e}")
+    
+    def unregister_broker(self, broker_id: str) -> None:
+        """
+        Unregister a broker from the manager.
+        
+        Args:
+            broker_id: Broker identifier to remove
+        """
+        try:
+            if broker_id in self._brokers:
+                del self._brokers[broker_id]
+            self.logger.info(f"Unregistered broker: {broker_id}")
+        except Exception as e:
+            self.logger.error(f"Failed to unregister broker {broker_id}: {e}")
+            raise BrokerError(f"Broker unregistration failed: {e}")
+    
+    def get_broker(self, broker_id: str) -> Optional[Any]:
+        """
+        Get a broker client by ID.
+        
+        Args:
+            broker_id: Broker identifier
+            
+        Returns:
+            Broker client instance or None if not found
+        """
+        return self._brokers.get(broker_id)
+    
+    def list_brokers(self) -> List[str]:
+        """
+        List all registered broker IDs.
+        
+        Returns:
+            List of broker identifiers
+        """
+        return list(self._brokers.keys())
     
     async def initialize(self, broker_configs: List[Dict[str, Any]]) -> None:
         """
@@ -307,7 +359,7 @@ class BrokerManager:
         Fetch market data with automatic broker selection.
         
         Args:
-            symbol: STANDARD symbol (XAUUSD, BTCUSD, etc.)
+            symbol: STANDARD symbol (XAUUSD, EURUSD, etc.)
             timeframe: Timeframe string
             bars: Number of bars
             broker_id: Optional specific broker
@@ -494,6 +546,67 @@ class BrokerManager:
         except Exception as e:
             self.logger.error(f"Broker selection failed: {e}")
             raise BrokerConnectionError(f"Broker selection failed: {e}")
+    
+    async def register_broker(self, broker_id: str, client: Any) -> None:
+        """
+        Register a broker client with the manager.
+        
+        Args:
+            broker_id: Unique broker identifier
+            client: MCP client instance (MT5MCPClient or MT4MCPClient)
+        """
+        try:
+            # Add to connection pool
+            self.connection_pool.add_adapter(broker_id, client)
+            # Store in local brokers dictionary
+            self._brokers[broker_id] = client
+            self.logger.info(f"Registered broker: {broker_id}")
+        except Exception as e:
+            self.logger.error(f"Failed to register broker {broker_id}: {e}")
+            raise BrokerError(f"Broker registration failed: {e}")
+    
+    def unregister_broker(self, broker_id: str) -> None:
+        """
+        Unregister a broker from the manager.
+        
+        Args:
+            broker_id: Broker identifier to remove
+        """
+        try:
+            # Remove from connection pool
+            if broker_id in self.connection_pool.adapters:
+                del self.connection_pool.adapters[broker_id]
+            
+            # Remove from local brokers dictionary
+            if broker_id in self._brokers:
+                del self._brokers[broker_id]
+                self.logger.info(f"Unregistered broker: {broker_id}")
+            else:
+                self.logger.warning(f"Broker {broker_id} not found for unregistration")
+        except Exception as e:
+            self.logger.error(f"Failed to unregister broker {broker_id}: {e}")
+            raise BrokerError(f"Broker unregistration failed: {e}")
+    
+    def get_broker(self, broker_id: str) -> Optional[Any]:
+        """
+        Get a broker client by ID.
+        
+        Args:
+            broker_id: Broker identifier
+            
+        Returns:
+            Broker client instance or None if not found
+        """
+        return self._brokers.get(broker_id)
+    
+    def list_brokers(self) -> List[str]:
+        """
+        List all registered broker IDs.
+        
+        Returns:
+            List of broker identifiers
+        """
+        return list(self._brokers.keys())
     
     def __repr__(self) -> str:
         """String representation of BrokerManager."""

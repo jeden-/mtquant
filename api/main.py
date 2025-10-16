@@ -21,21 +21,107 @@ from api.routes import (
     orders_router,
     websocket_router,
     metrics_router,
+    brokers_router,
     initialize_agent_routes,
     initialize_portfolio_routes,
     initialize_order_routes,
     initialize_websocket_routes,
-    initialize_metrics_routes
+    initialize_metrics_routes,
+    initialize_broker_routes
 )
 from mtquant.data.storage.redis_client import RedisClient, RedisConfig
 from mtquant.data.storage.postgresql_client import PostgreSQLClient, PostgreSQLConfig
 from mtquant.data.storage.questdb_client import QuestDBClient, QuestDBConfig
 from mtquant.agents.agent_manager import AgentLifecycleManager
 from mtquant.risk_management.portfolio_risk_manager import PortfolioRiskManager
+from mtquant.mcp_integration.managers.broker_manager import BrokerManager
+from mtquant.mcp_integration.clients.mt5_mcp_client import MT5MCPClient
+from mtquant.mcp_integration.clients.mt4_mcp_client import MT4MCPClient
 from mtquant.utils.logger import get_logger
+import os
 
 
 logger = get_logger(__name__)
+
+
+async def reconnect_brokers_from_db(broker_mgr: BrokerManager, db: PostgreSQLClient):
+    """
+    Auto-reconnect to all active brokers from database on backend startup.
+    
+    This function:
+    1. Fetches all active brokers from PostgreSQL
+    2. Reconnects to each broker's MT4/MT5 terminal
+    3. Registers them in BrokerManager
+    
+    Args:
+        broker_mgr: BrokerManager instance
+        db: PostgreSQL client instance
+    """
+    try:
+        logger.info("🔄 Auto-reconnecting to brokers from database...")
+        
+        # Fetch active brokers from database using connection pool
+        query = """
+            SELECT broker_id, broker_type, account, password_encrypted, server
+            FROM broker_connections
+            WHERE is_active = TRUE
+            ORDER BY last_connected_at DESC
+        """
+        async with db._pool.acquire() as conn:
+            rows = await conn.fetch(query)
+        
+        if not rows:
+            logger.info("No active brokers found in database")
+            return
+        
+        logger.info(f"Found {len(rows)} active broker(s) in database")
+        
+        # Reconnect to each broker
+        for row in rows:
+            broker_id = row['broker_id']
+            broker_type = row['broker_type']
+            
+            try:
+                logger.info(f"Reconnecting to {broker_type} broker: {broker_id}")
+                
+                # Prepare config
+                config = {
+                    'mcp_server_path': os.path.join(os.getcwd(), 'mcp_servers', broker_type, 'server'),
+                    'account': row['account'],
+                    'password': row['password_encrypted'],  # Use password_encrypted column
+                    'server': row['server']
+                }
+                
+                # Create appropriate client
+                if broker_type.lower() == 'mt5':
+                    client = MT5MCPClient(broker_id=broker_id, config=config)
+                elif broker_type.lower() == 'mt4':
+                    client = MT4MCPClient(broker_id=broker_id, config=config)
+                else:
+                    logger.warning(f"Unknown broker type: {broker_type}")
+                    continue
+                
+                # Connect
+                connected = await client.connect()
+                
+                if connected:
+                    # Register with BrokerManager
+                    await broker_mgr.register_broker(broker_id, client)
+                    logger.info(f"✅ Reconnected and registered: {broker_id}")
+                else:
+                    logger.warning(f"⚠️ Failed to reconnect: {broker_id}")
+            
+            except Exception as e:
+                logger.error(f"❌ Failed to reconnect {broker_id}: {e}")
+                continue
+        
+        logger.info(f"✅ Auto-reconnect complete. {len(broker_mgr.list_brokers())} broker(s) active")
+    
+    except Exception as e:
+        logger.error(f"❌ Auto-reconnect failed: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        # Don't raise - allow app to start even if reconnection fails
 
 # Global instances
 redis_client: Optional[RedisClient] = None
@@ -43,6 +129,7 @@ db_client: Optional[PostgreSQLClient] = None
 questdb_client: Optional[QuestDBClient] = None
 agent_manager: Optional[AgentLifecycleManager] = None
 risk_manager: Optional[PortfolioRiskManager] = None
+broker_manager: Optional[BrokerManager] = None
 
 
 @asynccontextmanager
@@ -127,6 +214,19 @@ async def lifespan(app: FastAPI):
             logger.warning(f"⚠️ Risk Manager initialization failed: {e}. Continuing without Risk Manager.")
             risk_manager = None
         
+        # Initialize Broker Manager (optional)
+        global broker_manager
+        try:
+            broker_manager = BrokerManager()
+            logger.info("✅ Broker Manager initialized")
+            
+            # Auto-reconnect to brokers from database
+            if db_client:
+                await reconnect_brokers_from_db(broker_manager, db_client)
+        except Exception as e:
+            logger.warning(f"⚠️ Broker Manager initialization failed: {e}. Continuing without Broker Manager.")
+            broker_manager = None
+        
         # Initialize route dependencies (with None checks)
         if agent_manager and agent_scheduler and agent_registry:
             initialize_agent_routes(agent_manager, agent_scheduler, agent_registry)
@@ -139,6 +239,8 @@ async def lifespan(app: FastAPI):
             initialize_websocket_routes(redis_client)
         if redis_client or db_client:
             initialize_metrics_routes(redis_client, db_client)
+        if broker_manager:
+            initialize_broker_routes(broker_manager)
         
         logger.info("✅ MTQuant API started successfully (some services may be unavailable)!")
     
@@ -255,6 +357,7 @@ app.include_router(portfolio_router)
 app.include_router(orders_router)
 app.include_router(websocket_router)
 app.include_router(metrics_router)
+app.include_router(brokers_router)
 
 
 # Root endpoint
