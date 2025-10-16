@@ -1,390 +1,363 @@
 #!/usr/bin/env python3
 """
-End-to-End 3-Phase Training Runner
+End-to-End Training Script - Complete 3-Phase Training Pipeline
 
-This script runs the complete 3-phase hierarchical training pipeline:
-- Phase 1: Individual Specialist Training
-- Phase 2: Meta-Controller Training  
-- Phase 3: Joint Training
+This script executes the complete hierarchical multi-agent training pipeline:
+1. Phase 1: Individual specialist training
+2. Phase 2: Meta-controller pre-training  
+3. Phase 3: Joint fine-tuning
 
-Author: MTQuant Development Team
-Date: October 15, 2025
+Usage:
+    python scripts/run_end_to_end_training.py [--config config/agents.yaml] [--skip-phase1] [--skip-phase2]
 """
 
-import os
-import sys
-import yaml
 import argparse
-import time
+import sys
+import os
 from pathlib import Path
-from datetime import datetime
+import yaml
 import logging
+from datetime import datetime
+import subprocess
 import json
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from mtquant.agents.training.phase1_trainer import Phase1Trainer
-from mtquant.agents.training.phase2_trainer import Phase2Trainer
 from mtquant.utils.logger import get_logger
 
 
-def setup_logging(phase: str = "e2e"):
-    """Setup comprehensive logging."""
-    log_dir = Path("logs/e2e_training")
-    log_dir.mkdir(parents=True, exist_ok=True)
+def run_phase1_training(config_path: str, output_dir: str, log_dir: str, device: str, verbose: bool) -> bool:
+    """Run Phase 1 training (individual specialists)."""
+    logger = get_logger(__name__)
+    logger.info("Starting Phase 1 training...")
     
-    # Create logger
-    logger = get_logger(f"{phase}_runner")
-    logger.setLevel(logging.INFO)
+    cmd = [
+        sys.executable, "scripts/run_phase1_training.py",
+        "--config", config_path,
+        "--output-dir", output_dir,
+        "--log-dir", log_dir,
+        "--device", device
+    ]
     
-    # File handler
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    file_handler = logging.FileHandler(
-        log_dir / f"{phase}_training_{timestamp}.log"
-    )
-    file_handler.setLevel(logging.INFO)
-    
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    
-    # Formatter
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
-    
-    # Add handlers
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-    
-    return logger
-
-
-def load_config():
-    """Load agent configuration."""
-    config_path = Path("config/agents.yaml")
-    
-    if not config_path.exists():
-        raise FileNotFoundError(f"Config file not found: {config_path}")
-    
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
-    
-    return config
-
-
-def run_phase1(logger, config, args):
-    """Run Phase 1: Individual Specialist Training."""
-    logger.info("=" * 80)
-    logger.info("PHASE 1: INDIVIDUAL SPECIALIST TRAINING")
-    logger.info("=" * 80)
-    
-    start_time = time.time()
+    if verbose:
+        cmd.append("--verbose")
     
     try:
-        # Initialize Phase 1 trainer
-        trainer = Phase1Trainer(config)
-        
-        # Train all specialists
-        logger.info("Training specialists for 8 instruments...")
-        logger.info("Instruments: EURUSD, GBPUSD, USDJPY, XAUUSD, WTIUSD, SPX500, NAS100, US30")
-        
-        results = trainer.train_all_specialists(
-            total_timesteps=args.phase1_timesteps,
-            parallel=args.parallel,
-            save_freq=args.save_freq
-        )
-        
-        # Save results
-        results_path = Path("logs/e2e_training/phase1_results.json")
-        results_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        with open(results_path, 'w') as f:
-            json.dump(results, f, indent=2, default=str)
-        
-        elapsed = time.time() - start_time
-        logger.info(f"Phase 1 completed in {elapsed/3600:.2f} hours")
-        logger.info(f"Results saved to: {results_path}")
-        
-        return results
-    
-    except Exception as e:
-        logger.error(f"Phase 1 failed: {e}", exc_info=True)
-        raise
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        logger.info("Phase 1 training completed successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Phase 1 training failed: {e}")
+        logger.error(f"STDOUT: {e.stdout}")
+        logger.error(f"STDERR: {e.stderr}")
+        return False
 
 
-def run_phase2(logger, config, args, phase1_results):
-    """Run Phase 2: Meta-Controller Training."""
-    logger.info("=" * 80)
-    logger.info("PHASE 2: META-CONTROLLER TRAINING")
-    logger.info("=" * 80)
+def run_phase2_training(config_path: str, output_dir: str, log_dir: str, device: str, verbose: bool) -> bool:
+    """Run Phase 2 training (meta-controller pre-training)."""
+    logger = get_logger(__name__)
+    logger.info("Starting Phase 2 training...")
     
-    start_time = time.time()
+    cmd = [
+        sys.executable, "scripts/run_phase2_training.py",
+        "--config", config_path,
+        "--output-dir", output_dir,
+        "--log-dir", log_dir,
+        "--device", device
+    ]
+    
+    if verbose:
+        cmd.append("--verbose")
     
     try:
-        # Initialize Phase 2 trainer
-        trainer = Phase2Trainer(config, phase1_results)
-        
-        # Train meta-controller
-        logger.info("Training Meta-Controller with portfolio-level objectives...")
-        
-        results = trainer.train_meta_controller(
-            total_timesteps=args.phase2_timesteps,
-            save_freq=args.save_freq
-        )
-        
-        # Save results
-        results_path = Path("logs/e2e_training/phase2_results.json")
-        
-        with open(results_path, 'w') as f:
-            json.dump(results, f, indent=2, default=str)
-        
-        elapsed = time.time() - start_time
-        logger.info(f"Phase 2 completed in {elapsed/3600:.2f} hours")
-        logger.info(f"Results saved to: {results_path}")
-        
-        return results
-    
-    except Exception as e:
-        logger.error(f"Phase 2 failed: {e}", exc_info=True)
-        raise
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        logger.info("Phase 2 training completed successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Phase 2 training failed: {e}")
+        logger.error(f"STDOUT: {e.stdout}")
+        logger.error(f"STDERR: {e.stderr}")
+        return False
 
 
-def run_phase3(logger, config, args, phase1_results, phase2_results):
-    """Run Phase 3: Joint Training."""
-    logger.info("=" * 80)
-    logger.info("PHASE 3: JOINT TRAINING")
-    logger.info("=" * 80)
+def run_phase3_training(config_path: str, output_dir: str, log_dir: str, device: str, verbose: bool) -> bool:
+    """Run Phase 3 training (joint fine-tuning)."""
+    logger = get_logger(__name__)
+    logger.info("Starting Phase 3 training...")
     
-    start_time = time.time()
+    cmd = [
+        sys.executable, "scripts/run_phase3_training.py",
+        "--config", config_path,
+        "--output-dir", output_dir,
+        "--log-dir", log_dir,
+        "--device", device
+    ]
+    
+    if verbose:
+        cmd.append("--verbose")
     
     try:
-        # TODO: Implement Phase 3 trainer
-        logger.info("Phase 3 joint training...")
-        logger.info("Training all agents together with gradient coordination...")
-        
-        # Placeholder for Phase 3
-        logger.warning("Phase 3 trainer not yet fully implemented")
-        logger.info("Using Phase 1 and Phase 2 models for now")
-        
-        results = {
-            'phase': 3,
-            'status': 'completed',
-            'note': 'Using Phase 1 and Phase 2 models',
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # Save results
-        results_path = Path("logs/e2e_training/phase3_results.json")
-        
-        with open(results_path, 'w') as f:
-            json.dump(results, f, indent=2, default=str)
-        
-        elapsed = time.time() - start_time
-        logger.info(f"Phase 3 completed in {elapsed:.2f} seconds")
-        logger.info(f"Results saved to: {results_path}")
-        
-        return results
-    
-    except Exception as e:
-        logger.error(f"Phase 3 failed: {e}", exc_info=True)
-        raise
-
-
-def generate_summary(logger, phase1_results, phase2_results, phase3_results, total_time):
-    """Generate training summary."""
-    logger.info("=" * 80)
-    logger.info("END-TO-END TRAINING SUMMARY")
-    logger.info("=" * 80)
-    
-    summary = {
-        'training_date': datetime.now().isoformat(),
-        'total_time_hours': total_time / 3600,
-        'phases': {
-            'phase1': {
-                'status': 'completed',
-                'specialists_trained': len(phase1_results.get('specialists', {})),
-                'results': phase1_results
-            },
-            'phase2': {
-                'status': 'completed',
-                'results': phase2_results
-            },
-            'phase3': {
-                'status': 'completed',
-                'results': phase3_results
-            }
-        },
-        'models_saved': {
-            'specialists': 'models/specialists/',
-            'meta_controller': 'models/meta_controller/',
-            'checkpoints': 'models/checkpoints/'
-        }
-    }
-    
-    # Save summary
-    summary_path = Path("logs/e2e_training/training_summary.json")
-    
-    with open(summary_path, 'w') as f:
-        json.dump(summary, f, indent=2, default=str)
-    
-    logger.info(f"Total training time: {total_time/3600:.2f} hours")
-    logger.info(f"Summary saved to: {summary_path}")
-    logger.info("=" * 80)
-    logger.info("🎉 END-TO-END TRAINING COMPLETED SUCCESSFULLY!")
-    logger.info("=" * 80)
-    
-    return summary
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        logger.info("Phase 3 training completed successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Phase 3 training failed: {e}")
+        logger.error(f"STDOUT: {e.stdout}")
+        logger.error(f"STDERR: {e.stderr}")
+        return False
 
 
 def main():
-    """Main execution function."""
-    parser = argparse.ArgumentParser(
-        description="Run end-to-end 3-phase hierarchical training"
-    )
-    
-    # Training parameters
+    """Main training function."""
+    parser = argparse.ArgumentParser(description="End-to-End Hierarchical Training Pipeline")
     parser.add_argument(
-        '--phase1-timesteps',
-        type=int,
-        default=100000,
-        help='Total timesteps for Phase 1 (per specialist)'
+        "--config", 
+        type=str, 
+        default="config/agents.yaml",
+        help="Path to configuration file"
     )
     parser.add_argument(
-        '--phase2-timesteps',
-        type=int,
-        default=50000,
-        help='Total timesteps for Phase 2 (meta-controller)'
+        "--output-dir", 
+        type=str, 
+        default="models/checkpoints",
+        help="Base output directory for all phases"
     )
     parser.add_argument(
-        '--phase3-timesteps',
-        type=int,
-        default=50000,
-        help='Total timesteps for Phase 3 (joint training)'
-    )
-    
-    # Execution parameters
-    parser.add_argument(
-        '--parallel',
-        action='store_true',
-        help='Train specialists in parallel (Phase 1)'
+        "--log-dir", 
+        type=str, 
+        default="logs",
+        help="Base log directory for all phases"
     )
     parser.add_argument(
-        '--save-freq',
-        type=int,
-        default=10000,
-        help='Save frequency (timesteps)'
+        "--device", 
+        type=str, 
+        default="auto",
+        help="Device to use (cuda/cpu/auto)"
     )
-    
-    # Phase selection
     parser.add_argument(
-        '--phases',
-        type=str,
-        default='1,2,3',
-        help='Phases to run (comma-separated, e.g., "1,2,3" or "1,2")'
+        "--verbose", 
+        action="store_true",
+        help="Verbose logging"
     )
-    
-    # Quick test mode
     parser.add_argument(
-        '--quick-test',
-        action='store_true',
-        help='Quick test mode (reduced timesteps)'
+        "--skip-phase1", 
+        action="store_true",
+        help="Skip Phase 1 training (use existing models)"
+    )
+    parser.add_argument(
+        "--skip-phase2", 
+        action="store_true",
+        help="Skip Phase 2 training (use existing models)"
+    )
+    parser.add_argument(
+        "--phase1-timesteps", 
+        type=int, 
+        default=500000,
+        help="Phase 1 training timesteps"
+    )
+    parser.add_argument(
+        "--phase2-timesteps", 
+        type=int, 
+        default=300000,
+        help="Phase 2 training timesteps"
+    )
+    parser.add_argument(
+        "--phase3-timesteps", 
+        type=int, 
+        default=1000000,
+        help="Phase 3 training timesteps"
     )
     
     args = parser.parse_args()
     
-    # Quick test mode overrides
-    if args.quick_test:
-        args.phase1_timesteps = 1000
-        args.phase2_timesteps = 500
-        args.phase3_timesteps = 500
-        print("🚀 Running in QUICK TEST mode (reduced timesteps)")
-    
-    # Parse phases to run
-    phases_to_run = [int(p.strip()) for p in args.phases.split(',')]
-    
     # Setup logging
-    logger = setup_logging("e2e")
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logger = get_logger(__name__, level=log_level)
     
     logger.info("=" * 80)
-    logger.info("MTQuant End-to-End 3-Phase Training")
+    logger.info("END-TO-END HIERARCHICAL MULTI-AGENT TRAINING PIPELINE")
     logger.info("=" * 80)
-    logger.info(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    logger.info(f"Phases to run: {phases_to_run}")
-    logger.info(f"Phase 1 timesteps: {args.phase1_timesteps}")
-    logger.info(f"Phase 2 timesteps: {args.phase2_timesteps}")
-    logger.info(f"Phase 3 timesteps: {args.phase3_timesteps}")
-    logger.info(f"Parallel training: {args.parallel}")
-    logger.info("=" * 80)
+    logger.info(f"Config: {args.config}")
+    logger.info(f"Output Directory: {args.output_dir}")
+    logger.info(f"Log Directory: {args.log_dir}")
+    logger.info(f"Device: {args.device}")
+    logger.info(f"Phase 1 Timesteps: {args.phase1_timesteps:,}")
+    logger.info(f"Phase 2 Timesteps: {args.phase2_timesteps:,}")
+    logger.info(f"Phase 3 Timesteps: {args.phase3_timesteps:,}")
+    logger.info(f"Skip Phase 1: {args.skip_phase1}")
+    logger.info(f"Skip Phase 2: {args.skip_phase2}")
     
-    total_start_time = time.time()
+    # Create directories
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    Path(args.log_dir).mkdir(parents=True, exist_ok=True)
+    
+    # Training results
+    training_results = {
+        'start_time': datetime.now().isoformat(),
+        'phases': {},
+        'total_duration': 0,
+        'success': False
+    }
+    
+    overall_start_time = datetime.now()
     
     try:
-        # Load configuration
-        logger.info("Loading configuration...")
-        config = load_config()
-        logger.info(f"Configuration loaded: {len(config.get('specialists', {}))} specialists configured")
-        
-        # Initialize results
-        phase1_results = None
-        phase2_results = None
-        phase3_results = None
-        
-        # Run phases
-        if 1 in phases_to_run:
-            phase1_results = run_phase1(logger, config, args)
+        # Phase 1: Individual Specialist Training
+        if not args.skip_phase1:
+            logger.info("=" * 60)
+            logger.info("PHASE 1: INDIVIDUAL SPECIALIST TRAINING")
+            logger.info("=" * 60)
+            
+            phase1_start = datetime.now()
+            success = run_phase1_training(
+                config_path=args.config,
+                output_dir=f"{args.output_dir}/phase1",
+                log_dir=f"{args.log_dir}/phase1",
+                device=args.device,
+                verbose=args.verbose
+            )
+            phase1_duration = (datetime.now() - phase1_start).total_seconds()
+            
+            training_results['phases']['phase1'] = {
+                'success': success,
+                'duration_seconds': phase1_duration,
+                'timesteps': args.phase1_timesteps
+            }
+            
+            if not success:
+                logger.error("Phase 1 training failed. Aborting pipeline.")
+                return 1
         else:
-            logger.info("Skipping Phase 1 (loading previous results)")
-            # Load previous results if available
-            results_path = Path("logs/e2e_training/phase1_results.json")
-            if results_path.exists():
-                with open(results_path, 'r') as f:
-                    phase1_results = json.load(f)
+            logger.info("Skipping Phase 1 training (using existing models)")
+            training_results['phases']['phase1'] = {
+                'success': True,
+                'duration_seconds': 0,
+                'timesteps': 0,
+                'skipped': True
+            }
         
-        if 2 in phases_to_run:
-            if phase1_results is None:
-                raise ValueError("Phase 2 requires Phase 1 results")
-            phase2_results = run_phase2(logger, config, args, phase1_results)
+        # Phase 2: Meta-Controller Pre-training
+        if not args.skip_phase2:
+            logger.info("=" * 60)
+            logger.info("PHASE 2: META-CONTROLLER PRE-TRAINING")
+            logger.info("=" * 60)
+            
+            phase2_start = datetime.now()
+            success = run_phase2_training(
+                config_path=args.config,
+                output_dir=f"{args.output_dir}/phase2",
+                log_dir=f"{args.log_dir}/phase2",
+                device=args.device,
+                verbose=args.verbose
+            )
+            phase2_duration = (datetime.now() - phase2_start).total_seconds()
+            
+            training_results['phases']['phase2'] = {
+                'success': success,
+                'duration_seconds': phase2_duration,
+                'timesteps': args.phase2_timesteps
+            }
+            
+            if not success:
+                logger.error("Phase 2 training failed. Aborting pipeline.")
+                return 1
         else:
-            logger.info("Skipping Phase 2 (loading previous results)")
-            results_path = Path("logs/e2e_training/phase2_results.json")
-            if results_path.exists():
-                with open(results_path, 'r') as f:
-                    phase2_results = json.load(f)
+            logger.info("Skipping Phase 2 training (using existing models)")
+            training_results['phases']['phase2'] = {
+                'success': True,
+                'duration_seconds': 0,
+                'timesteps': 0,
+                'skipped': True
+            }
         
-        if 3 in phases_to_run:
-            if phase1_results is None or phase2_results is None:
-                raise ValueError("Phase 3 requires Phase 1 and Phase 2 results")
-            phase3_results = run_phase3(logger, config, args, phase1_results, phase2_results)
-        else:
-            logger.info("Skipping Phase 3")
+        # Phase 3: Joint Fine-tuning
+        logger.info("=" * 60)
+        logger.info("PHASE 3: JOINT FINE-TUNING")
+        logger.info("=" * 60)
         
-        # Generate summary
-        total_time = time.time() - total_start_time
-        summary = generate_summary(
-            logger,
-            phase1_results or {},
-            phase2_results or {},
-            phase3_results or {},
-            total_time
+        phase3_start = datetime.now()
+        success = run_phase3_training(
+            config_path=args.config,
+            output_dir=f"{args.output_dir}/phase3",
+            log_dir=f"{args.log_dir}/phase3",
+            device=args.device,
+            verbose=args.verbose
         )
+        phase3_duration = (datetime.now() - phase3_start).total_seconds()
+        
+        training_results['phases']['phase3'] = {
+            'success': success,
+            'duration_seconds': phase3_duration,
+            'timesteps': args.phase3_timesteps
+        }
+        
+        if not success:
+            logger.error("Phase 3 training failed.")
+            return 1
+        
+        # Pipeline completed successfully
+        overall_duration = (datetime.now() - overall_start_time).total_seconds()
+        training_results['end_time'] = datetime.now().isoformat()
+        training_results['total_duration'] = overall_duration
+        training_results['success'] = True
+        
+        # Log final results
+        logger.info("=" * 80)
+        logger.info("END-TO-END TRAINING PIPELINE COMPLETED SUCCESSFULLY")
+        logger.info("=" * 80)
+        logger.info(f"Total Duration: {overall_duration / 3600:.2f} hours")
+        logger.info(f"Phase 1 Duration: {training_results['phases']['phase1']['duration_seconds'] / 3600:.2f} hours")
+        logger.info(f"Phase 2 Duration: {training_results['phases']['phase2']['duration_seconds'] / 3600:.2f} hours")
+        logger.info(f"Phase 3 Duration: {training_results['phases']['phase3']['duration_seconds'] / 3600:.2f} hours")
+        
+        # Save comprehensive training report
+        report_path = Path(args.output_dir) / "end_to_end_training_report.json"
+        with open(report_path, 'w') as f:
+            json.dump(training_results, f, indent=2)
+        
+        logger.info(f"Training report saved to: {report_path}")
+        
+        # Check if targets are met (from Phase 3 evaluation)
+        phase3_summary_path = Path(args.output_dir) / "phase3" / "training_summary.json"
+        if phase3_summary_path.exists():
+            with open(phase3_summary_path, 'r') as f:
+                phase3_summary = json.load(f)
+            
+            eval_results = phase3_summary.get('evaluation_results', {})
+            mean_sharpe = eval_results.get('mean_portfolio_sharpe', 0)
+            mean_drawdown = abs(eval_results.get('mean_max_drawdown', 0))
+            
+            logger.info("=" * 40)
+            logger.info("FINAL TARGET ACHIEVEMENT")
+            logger.info("=" * 40)
+            logger.info(f"Portfolio Sharpe > 2.0: {'✅' if mean_sharpe > 2.0 else '❌'} ({mean_sharpe:.3f})")
+            logger.info(f"Max Drawdown < 15%: {'✅' if mean_drawdown < 0.15 else '❌'} ({mean_drawdown:.1%})")
+            logger.info(f"VaR Compliance: {'✅' if eval_results.get('var_violation_rate', 1) == 0 else '❌'}")
         
         return 0
-    
+        
     except KeyboardInterrupt:
-        logger.warning("Training interrupted by user")
+        logger.info("Training pipeline interrupted by user")
+        training_results['end_time'] = datetime.now().isoformat()
+        training_results['interrupted'] = True
         return 1
-    
     except Exception as e:
-        logger.error(f"Training failed: {e}", exc_info=True)
+        logger.error(f"Training pipeline failed: {e}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        training_results['end_time'] = datetime.now().isoformat()
+        training_results['error'] = str(e)
         return 1
+    finally:
+        # Save training results even if interrupted
+        report_path = Path(args.output_dir) / "end_to_end_training_report.json"
+        with open(report_path, 'w') as f:
+            json.dump(training_results, f, indent=2)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
-
-
+    exit_code = main()
+    sys.exit(exit_code)

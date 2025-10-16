@@ -554,5 +554,55 @@ def main():
         print(f"Training report saved to {args.output}/training_report_phase2_*.yaml")
 
 
+def create_phase2_trainer(
+    config_path: str = "config/agents.yaml",
+    market_data: Optional[Dict[str, Any]] = None,
+    output_dir: str = "models/checkpoints/phase2",
+    log_dir: str = "logs/phase2",
+    device: str = "auto"
+) -> Phase2Trainer:
+    """
+    Factory function to create Phase 2 trainer with default configuration.
+    
+    Args:
+        config_path: Path to configuration file
+        market_data: Market data dictionary
+        output_dir: Output directory for models
+        log_dir: Log directory
+        device: Device to use (cuda/cpu/auto)
+        
+    Returns:
+        Configured Phase2Trainer instance
+    """
+    # Load configuration
+    with open(config_path, 'r') as f:
+        config_dict = yaml.safe_load(f)
+    
+    # Create market data if not provided
+    if market_data is None:
+        from ..training.train_ppo import create_sample_data
+        market_data = {
+            'EURUSD': create_sample_data('EURUSD', 10000),
+            'GBPUSD': create_sample_data('GBPUSD', 10000),
+            'USDJPY': create_sample_data('USDJPY', 10000),
+            'XAUUSD': create_sample_data('XAUUSD', 10000),
+            'WTIUSD': create_sample_data('WTIUSD', 10000),
+            'SPX500': create_sample_data('SPX500', 10000),
+            'NAS100': create_sample_data('NAS100', 10000),
+            'US30': create_sample_data('US30', 10000)
+        }
+    
+    # Create trainer
+    trainer = Phase2Trainer(
+        config_path=config_path,
+        data_path="data/market_data",  # Placeholder
+        specialist_models_path="models/checkpoints/phase1",
+        output_path=output_dir,
+        n_envs=config_dict.get('training', {}).get('n_envs', 4)
+    )
+    
+    return trainer
+
+
 if __name__ == "__main__":
     main()
