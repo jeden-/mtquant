@@ -36,3 +36,4 @@ Write-Host "ℹ️  Database services (Redis, PostgreSQL, QuestDB) are still run
 Write-Host "   This is normal - they can run in the background." -ForegroundColor White
 Write-Host ""
 
+

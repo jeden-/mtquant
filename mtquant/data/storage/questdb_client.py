@@ -593,3 +593,4 @@ class QuestDBClient:
         return self._connected and self._pool is not None
 
 
+

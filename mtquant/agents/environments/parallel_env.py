@@ -95,7 +95,7 @@ class ParallelHierarchicalWrapper:
             
             # Choose vectorized environment type
             if self.async_envs:
-                specialist_envs[specialist_name] = AsyncVectorEnv(env_factories)
+                specialist_envs[specialist_name] = SyncVectorEnv(env_factories)  # Use SyncVectorEnv to avoid reward array issues
             else:
                 specialist_envs[specialist_name] = SyncVectorEnv(env_factories)
         

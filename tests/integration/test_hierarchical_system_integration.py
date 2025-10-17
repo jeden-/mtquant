@@ -70,9 +70,7 @@ def sample_portfolio():
             entry_price=1.1000,
             current_price=1.1050,
             unrealized_pnl=50.0,
-            opened_at=datetime.now() - timedelta(hours=2),
-            updated_at=datetime.now(),
-            status="open"
+            opened_at=datetime.now() - timedelta(hours=2)
         ),
         Position(
             position_id="pos_2",
@@ -83,9 +81,7 @@ def sample_portfolio():
             entry_price=2000.0,
             current_price=2010.0,
             unrealized_pnl=10.0,
-            opened_at=datetime.now() - timedelta(hours=1),
-            updated_at=datetime.now(),
-            status="open"
+            opened_at=datetime.now() - timedelta(hours=1)
         )
     ]
     

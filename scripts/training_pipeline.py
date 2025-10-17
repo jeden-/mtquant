@@ -28,7 +28,7 @@ from typing import Dict, List, Optional, Any
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from mtquant.utils.logger import get_logger
+from mtquant.utils.logger import get_logger, setup_logger
 
 
 class TrainingPipeline:
@@ -143,9 +143,7 @@ class TrainingPipeline:
             sys.executable, phase_config['script'],
             '--config', self.config_path,
             '--timesteps', str(phase_config['timesteps']),
-            '--output-dir', str(phase_config['output_dir']),
-            '--log-dir', str(phase_config['log_dir']),
-            '--device', self.device
+            '--output', str(phase_config['output_dir'])
         ]
         
         # Run phase
@@ -443,8 +441,9 @@ def main():
     args = parser.parse_args()
     
     # Setup logging
-    log_level = logging.DEBUG if args.verbose else logging.INFO
-    logger = get_logger(__name__, level=log_level)
+    log_level = "DEBUG" if args.verbose else "INFO"
+    setup_logger(level=log_level)
+    logger = get_logger(__name__)
     
     # Create pipeline
     pipeline = TrainingPipeline(

@@ -41,14 +41,23 @@ portfolio_risk:
   correlation_window: 100
 
 training:
-  phase_1_timesteps: 500000  # Individual specialist training
-  phase_2_timesteps: 300000  # Meta pre-training
-  phase_3_timesteps: 1000000  # Joint fine-tuning
+  phase_1_timesteps: 100000  # Individual specialist training (reduced for testing)
+  phase_2_timesteps: 50000   # Meta pre-training (reduced for testing)
+  phase_3_timesteps: 100000  # Joint fine-tuning (reduced for testing)
   
-  batch_size: 256
+  # Data configuration
+  use_synthetic_data: true
+  timeframe: "1H"
+  data_periods: 10000
+  
+  # Training parameters
+  batch_size: 64
   n_epochs: 10
   gamma: 0.99
   gae_lambda: 0.95
+  clip_range: 0.2
+  eval_interval: 10000
+  eval_episodes: 10
   clip_range: 0.2
   
   # Multi-agent specific

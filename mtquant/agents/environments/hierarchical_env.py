@@ -170,7 +170,10 @@ class BaseHierarchicalEnv(gym.Env, ABC):
         self._update_portfolio_state()
         
         # Calculate reward
-        reward = self._calculate_reward(executed_orders)
+        if hasattr(self, '_calculate_reward'):
+            reward = self._calculate_reward(executed_orders)
+        else:
+            reward = 0.0
         
         # Update step counter
         self.current_step += 1
@@ -184,6 +187,76 @@ class BaseHierarchicalEnv(gym.Env, ABC):
         info = self._get_info()
         
         return observation, reward, done, truncated, info
+    
+    def _calculate_reward(self, executed_orders: List[Order]) -> float:
+        """Calculate reward based on executed orders and portfolio performance."""
+        if not executed_orders:
+            return 0.0
+        
+        # Calculate portfolio return
+        portfolio_return = self._calculate_portfolio_return()
+        
+        # Calculate transaction costs
+        total_transaction_cost = sum(order.transaction_cost for order in executed_orders)
+        transaction_cost_penalty = total_transaction_cost / self.portfolio_value
+        
+        # Calculate risk penalty
+        risk_penalty = self._calculate_risk_penalty()
+        
+        # Calculate diversification bonus
+        diversification_bonus = self._calculate_diversification_bonus()
+        
+        # Combine rewards
+        reward = (
+            portfolio_return * 100.0  # Scale up returns
+            - transaction_cost_penalty * self.config.transaction_cost_weight
+            - risk_penalty * self.config.risk_penalty_weight
+            + diversification_bonus * self.config.diversification_bonus_weight
+        )
+        
+        return reward
+    
+    def _calculate_portfolio_return(self) -> float:
+        """Calculate current portfolio return."""
+        if self.current_step == 0:
+            return 0.0
+        
+        # Calculate total position value
+        total_position_value = sum(
+            position.position_value for position in self.positions.values()
+        )
+        
+        # Calculate portfolio return
+        portfolio_return = (total_position_value - self.config.initial_capital) / self.config.initial_capital
+        
+        return portfolio_return
+    
+    def _calculate_risk_penalty(self) -> float:
+        """Calculate risk penalty based on portfolio risk."""
+        if not self.positions:
+            return 0.0
+        
+        # Calculate portfolio volatility
+        if len(self.episode_returns) < 2:
+            return 0.0
+        
+        volatility = np.std(self.episode_returns)
+        
+        # Penalty if volatility exceeds threshold
+        if volatility > 0.05:  # 5% volatility threshold
+            return (volatility - 0.05) * 10.0
+        
+        return 0.0
+    
+    def _calculate_diversification_bonus(self) -> float:
+        """Calculate diversification bonus."""
+        if len(self.positions) < 2:
+            return 0.0
+        
+        # Bonus for having multiple positions
+        diversification_bonus = min(len(self.positions) / len(self.config.instruments), 1.0)
+        
+        return diversification_bonus
     
     def _simulate_order_execution(self, orders: List[Order]) -> List[Order]:
         """Simulate order execution (simplified version)."""
@@ -218,6 +291,7 @@ class BaseHierarchicalEnv(gym.Env, ABC):
             self.positions[symbol] = Position(
                 position_id=f"{symbol}_{self.current_step}",
                 agent_id="hierarchical_env",
+                symbol=symbol,
                 side=order.side,
                 entry_price=order.execution_price,
                 quantity=order.quantity,

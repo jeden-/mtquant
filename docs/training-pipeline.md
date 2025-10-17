@@ -552,3 +552,4 @@ model = torch.compile(model)
 - **Multi-Objective Optimization**: Balance multiple objectives simultaneously
 - **Explainable AI**: Interpretable decision making
 - **Robust Optimization**: Improve robustness to market changes
+

@@ -86,3 +86,4 @@ if __name__ == "__main__":
         print(f"\n✅ Działające hasło: {working_password}")
     else:
         print("\n❌ Problem z połączeniem do PostgreSQL")
+

@@ -177,8 +177,7 @@ class Phase3JointTrainer:
             from .gradient_coordination import GradientCoordinationConfig
             grad_config = GradientCoordinationConfig(
                 meta_update_freq=self.config.meta_update_freq,
-                specialist_update_freq=self.config.specialist_update_freq,
-                coordination_method="adaptive"
+                specialist_update_freq=self.config.specialist_update_freq
             )
             self.gradient_coordinator = GradientCoordinationSystem(
                 config=grad_config,
@@ -190,9 +189,10 @@ class Phase3JointTrainer:
         if self.config.curriculum_learning:
             from .curriculum_learning import CurriculumConfig
             curriculum_config = CurriculumConfig(
-                total_timesteps=self.config.total_timesteps,
-                difficulty_progression="exponential",
-                scenario_mixing=True
+                adaptive_difficulty=True,
+                adaptive_scenarios=True,
+                performance_threshold=0.1,
+                stability_threshold=0.05
             )
             self.curriculum_manager = AdvancedCurriculumLearning(
                 config=curriculum_config,
@@ -203,13 +203,15 @@ class Phase3JointTrainer:
         # Monitoring dashboard
         from .training_monitoring import MonitoringConfig
         monitoring_config = MonitoringConfig(
-            log_interval=self.config.log_interval,
-            save_interval=self.config.save_interval,
-            eval_interval=self.config.eval_interval
+            metrics_interval=1.0,
+            plot_interval=60.0,
+            save_interval=300.0,
+            logs_dir="logs/phase3",
+            plots_dir="plots/phase3",
+            metrics_dir="metrics/phase3"
         )
         self.monitoring_dashboard = TrainingMonitoringDashboard(
-            config=monitoring_config,
-            output_dir="logs/phase3"
+            config=monitoring_config
         )
         
         # Model checkpointing
@@ -217,20 +219,25 @@ class Phase3JointTrainer:
         checkpoint_config = CheckpointConfig(
             save_interval=self.config.save_interval,
             max_checkpoints=10,
-            save_best_only=True
+            save_best=True,
+            save_latest=True
         )
+        # Override checkpoint directory
+        checkpoint_config.checkpoint_dir = self.config.phase3_models_dir
         self.checkpointing_system = ModelCheckpointingSystem(
-            config=checkpoint_config,
-            output_dir=self.config.phase3_models_dir
+            config=checkpoint_config
         )
         
         # Portfolio reward function
         from .portfolio_reward import RewardConfig
         reward_config = RewardConfig(
-            risk_penalty_weight=1.0,
+            portfolio_return_weight=1.0,
+            risk_adjusted_return_weight=2.0,
+            diversification_weight=0.5,
+            risk_management_weight=3.0,
             transaction_cost_weight=1.0,
-            diversification_bonus_weight=0.5,
-            sharpe_target=2.0
+            drawdown_penalty_weight=5.0,
+            target_sharpe_ratio=2.0
         )
         self.portfolio_reward = PortfolioRewardFunction(
             config=reward_config,
@@ -268,33 +275,66 @@ class Phase3JointTrainer:
         from ..environments.joint_training_env import JointTrainingConfig
         
         env_config = JointTrainingConfig(
-            instruments=list(self.specialists.keys()),
             episode_length=self.config.episode_length,
             initial_capital=self.config.initial_capital,
             max_portfolio_var=self.config.max_portfolio_var,
-            max_correlation_exposure=self.config.max_correlation_exposure
+            max_correlation_exposure=self.config.max_correlation_exposure,
+            meta_update_freq=self.config.meta_update_freq,
+            specialist_update_freq=self.config.specialist_update_freq
         )
         
         return JointTrainingEnv(
             config=env_config,
             market_data=self.market_data,
-            specialists=self.specialists,
             meta_controller=self.meta_controller,
-            portfolio_risk_manager=self.portfolio_risk_manager,
+            specialists=self.specialists,
             communication_hub=self.communication_hub,
-            portfolio_reward=self.portfolio_reward
+            portfolio_risk_manager=self.portfolio_risk_manager
         )
     
     def create_parallel_envs(self) -> DummyVecEnv:
         """Create parallel environments for training."""
-        envs = []
+        def make_env():
+            def _thunk():
+                env = self.create_joint_training_env()
+                env = Monitor(env, filename=f"logs/phase3/env_{len(envs)}")
+                return env
+            return _thunk
         
-        for i in range(self.config.n_envs):
-            env = self.create_joint_training_env()
-            env = Monitor(env, filename=f"logs/phase3/env_{i}")
-            envs.append(env)
-        
+        envs = [make_env() for _ in range(self.config.n_envs)]
         return DummyVecEnv(envs)
+    
+    def create_training_report(self) -> Dict[str, Any]:
+        """Create training report."""
+        return {
+            "phase": "Phase 3 Joint Training",
+            "status": "initialized",
+            "components": {
+                "meta_controller": "loaded" if hasattr(self, 'meta_controller') else "not_loaded",
+                "specialists": list(self.specialists.keys()) if hasattr(self, 'specialists') else [],
+                "gradient_coordinator": "enabled" if hasattr(self, 'gradient_coordinator') else "disabled",
+                "curriculum_manager": "enabled" if hasattr(self, 'curriculum_manager') else "disabled",
+                "monitoring_dashboard": "enabled" if hasattr(self, 'monitoring_dashboard') else "disabled",
+                "checkpointing_system": "enabled" if hasattr(self, 'checkpointing_system') else "disabled"
+            },
+            "config": {
+                "n_envs": self.config.n_envs,
+                "learning_rate": self.config.learning_rate,
+                "batch_size": self.config.batch_size,
+                "episode_length": self.config.episode_length
+            }
+        }
+    
+    def save_training_report(self, report: Dict[str, Any]) -> None:
+        """Save training report to file."""
+        import json
+        from datetime import datetime
+        
+        from pathlib import Path
+        report_path = Path(self.config.phase3_models_dir) / f"training_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_path, 'w') as f:
+            json.dump(report, f, indent=2)
+        self.logger.info(f"Training report saved to {report_path}")
     
     def train(self) -> Dict[str, Any]:
         """
@@ -511,8 +551,19 @@ def create_phase3_trainer(
     with open(config_path, 'r') as f:
         config_dict = yaml.safe_load(f)
     
-    # Create Phase 3 config
-    phase3_config = Phase3Config(**config_dict.get('training', {}))
+    # Create Phase 3 config with default values
+    training_config = config_dict.get('training', {})
+    phase3_config = Phase3Config(
+        total_timesteps=training_config.get('phase_3_timesteps', 1000000),
+        learning_rate=training_config.get('learning_rate', 0.0001),
+        batch_size=training_config.get('batch_size', 256),
+        n_epochs=training_config.get('n_epochs', 10),
+        gamma=training_config.get('gamma', 0.99),
+        gae_lambda=training_config.get('gae_lambda', 0.95),
+        clip_range=training_config.get('clip_range', 0.2),
+        n_envs=training_config.get('n_envs', 8),
+        device=training_config.get('device', 'auto')
+    )
     
     # Create market data if not provided
     if market_data is None:
@@ -534,7 +585,9 @@ def create_phase3_trainer(
     
     specialists = {}
     for spec_name, spec_config in config_dict['specialists'].items():
-        specialist = registry.create_specialist(spec_name, spec_config)
+        # Remove 'type' and 'learning_rate' from config as they're not needed for constructor
+        specialist_config = {k: v for k, v in spec_config.items() if k not in ['type', 'learning_rate']}
+        specialist = registry.create_specialist(spec_name, specialist_config)
         specialists[spec_name] = specialist
     
     # Create meta-controller

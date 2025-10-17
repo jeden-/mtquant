@@ -208,3 +208,4 @@ W razie problemów:
 
 **Powodzenia w tradingu! 🚀📈**
 
+

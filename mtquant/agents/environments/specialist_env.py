@@ -393,11 +393,11 @@ class SpecialistEnv(BaseHierarchicalEnv):
         except Exception:
             return 0.02
     
-    def _calculate_reward(self, executed_orders: List) -> float:
+    def _calculate_reward(self, executed_orders: List) -> np.ndarray:
         """Calculate reward for specialist."""
         
         if self.current_step == 0:
-            return 0.0
+            return np.array([0.0], dtype=np.float32)
         
         # Base reward from specialist P&L
         specialist_pnl = 0.0
@@ -440,7 +440,7 @@ class SpecialistEnv(BaseHierarchicalEnv):
         diversification_bonus = num_positions / len(self.specialist_instruments)
         reward += self.config.diversification_bonus_weight * diversification_bonus * 0.005
         
-        return reward
+        return np.array([reward], dtype=np.float32)
     
     def get_signal_history(self) -> Dict[str, List[float]]:
         """Get signal history for analysis."""

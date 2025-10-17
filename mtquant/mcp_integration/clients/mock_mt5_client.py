@@ -62,3 +62,4 @@ class MockMT5Client:
     def is_connected(self) -> bool:
         """Check if connected."""
         return self._connected
+

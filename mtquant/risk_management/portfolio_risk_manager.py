@@ -751,8 +751,8 @@ def test_var_calculation():
     
     # Create dummy positions
     positions = [
-        Position(symbol='EURUSD', quantity=1.0, current_price=1.1000),
-        Position(symbol='XAUUSD', quantity=0.1, current_price=2000.0)
+        Position(position_id="test1", agent_id="test", symbol='EURUSD', side='long', quantity=1.0, entry_price=1.1000, current_price=1.1000),
+        Position(position_id="test2", agent_id="test", symbol='XAUUSD', side='long', quantity=0.1, entry_price=2000.0, current_price=2000.0)
     ]
     
     # Create dummy returns history

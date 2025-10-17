@@ -30,3 +30,4 @@ async def check_table():
 
 if __name__ == "__main__":
     asyncio.run(check_table())
+

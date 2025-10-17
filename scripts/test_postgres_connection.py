@@ -103,3 +103,4 @@ if __name__ == "__main__":
         print(f"\n✅ Działające połączenie: postgres / {working_password}")
     else:
         print("\n❌ Problem z połączeniem do PostgreSQL")
+

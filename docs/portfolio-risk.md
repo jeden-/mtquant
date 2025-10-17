@@ -747,3 +747,4 @@ class TestRiskManagementIntegration:
 - **Multi-factor Risk Models**: Incorporate multiple risk factors
 - **Behavioral Risk Models**: Account for behavioral biases
 - **Climate Risk Integration**: Incorporate climate-related risks
+

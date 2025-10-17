@@ -80,3 +80,4 @@ if __name__ == "__main__":
         print(f"\n✅ Gotowe! Teraz możemy inicjalizować tabele...")
     else:
         print("\n❌ Problem z utworzeniem bazy")
+

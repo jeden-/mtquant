@@ -24,30 +24,11 @@ from mtquant.utils.logger import get_logger
 
 def setup_logging():
     """Setup comprehensive logging for Phase 1 training."""
-    log_dir = Path("logs/phase1")
-    log_dir.mkdir(parents=True, exist_ok=True)
+    from mtquant.utils.logger import setup_logger, get_logger
     
-    # Create logger
+    # Setup logger
+    setup_logger(level="INFO")
     logger = get_logger("phase1_runner")
-    
-    # File handler
-    file_handler = logging.FileHandler(log_dir / f"phase1_training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
-    file_handler.setLevel(logging.INFO)
-    
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    
-    # Formatter
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
-    
-    # Add handlers
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
     
     return logger
 

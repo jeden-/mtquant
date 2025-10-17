@@ -1,8 +1,8 @@
 {
-  "export_timestamp": "2025-10-15T09:59:17.388025",
+  "export_timestamp": "2025-10-17T06:52:10.712318",
   "system_status": {
     "system_id": "hierarchical_system",
-    "timestamp": "2025-10-15T09:59:17.388025",
+    "timestamp": "2025-10-17T06:52:10.712318",
     "training_mode": false,
     "risk_enabled": true,
     "statistics": {
@@ -22,7 +22,7 @@
         "status": "active"
       }
     },
-    "communication_stats": "<Mock name='mock.get_statistics()' id='2648320278048'>",
+    "communication_stats": "<Mock name='mock.get_statistics()' id='2180948169872'>",
     "current_state": {
       "test": "data"
     }

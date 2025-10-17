@@ -12,3 +12,4 @@ CREATE TABLE IF NOT EXISTS broker_connections (
 
 CREATE INDEX IF NOT EXISTS idx_broker_connections_active ON broker_connections(is_active);
 
+

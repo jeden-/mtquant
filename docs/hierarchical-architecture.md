@@ -433,3 +433,4 @@ python scripts/training_pipeline.py --mode eval --eval-episodes 200
 - **Meta-Learning**: Fast adaptation to new market regimes
 - **Multi-Objective Optimization**: Balance returns, risk, and transaction costs
 - **Explainable AI**: Interpretable decision making for regulatory compliance
+

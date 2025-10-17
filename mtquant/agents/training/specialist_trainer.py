@@ -91,9 +91,10 @@ class SpecialistTrainer:
         
         return {
             'specialist': specialist_config,
+            'specialists': config['specialists'],  # Add this line
             'training': config['training'],
             'portfolio_risk': config['portfolio_risk'],
-            'communication': config['communication']
+            'communication': config.get('communication', {})
         }
     
     def _load_market_data(self) -> Dict[str, pd.DataFrame]:
@@ -256,17 +257,18 @@ class SpecialistTrainer:
     def _create_ppo_model(self, env) -> PPO:
         """Create PPO model for training."""
         training_config = self.config['training']
+        specialist_config = self.config['specialists'][self.specialist_type]
         
         model = PPO(
             "MlpPolicy",
             env,
-            learning_rate=training_config['learning_rate'],
+            learning_rate=specialist_config['learning_rate'],
             n_steps=2048,
-            batch_size=training_config['batch_size'],
-            n_epochs=training_config['n_epochs'],
-            gamma=training_config['gamma'],
-            gae_lambda=training_config['gae_lambda'],
-            clip_range=training_config['clip_range'],
+            batch_size=training_config.get('batch_size', 64),
+            n_epochs=training_config.get('n_epochs', 10),
+            gamma=training_config.get('gamma', 0.99),
+            gae_lambda=training_config.get('gae_lambda', 0.95),
+            clip_range=training_config.get('clip_range', 0.2),
             ent_coef=0.01,
             vf_coef=0.5,
             max_grad_norm=0.5,
@@ -325,17 +327,19 @@ class SpecialistTrainer:
         specialist_envs = self.parallel_wrapper.create_specialist_envs()
         env = specialist_envs[self.specialist_type]
         
-        # Add monitoring
-        env = VecMonitor(env)
-        env = VecNormalize(env, norm_obs=True, norm_reward=True)
+        # Add monitoring - use DummyVecEnv to avoid compatibility issues
+        from stable_baselines3.common.vec_env import DummyVecEnv
+        # Don't use VecNormalize with SyncVectorEnv due to compatibility issues
+        # env = VecNormalize(env, norm_obs=True, norm_reward=True)
         
         # Create PPO model
         model = self._create_ppo_model(env)
         
         # Create evaluation environment
         eval_env = self._create_eval_environment()
-        eval_env = VecMonitor(eval_env)
-        eval_env = VecNormalize(eval_env, norm_obs=True, norm_reward=True)
+        eval_env = DummyVecEnv([lambda: eval_env])
+        # Don't use VecNormalize with DummyVecEnv due to compatibility issues
+        # eval_env = VecNormalize(eval_env, norm_obs=True, norm_reward=True)
         
         # Create callbacks
         callbacks = self._create_callbacks(eval_env)

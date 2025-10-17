@@ -143,7 +143,11 @@ class TrainingMonitoringDashboard:
         self.system_alerts: List[Dict[str, Any]] = []
         
         # Plotting setup
-        plt.style.use(config.plot_style)
+        try:
+            plt.style.use(config.plot_style)
+        except OSError:
+            # Fallback to default style if seaborn is not available
+            plt.style.use('default')
         sns.set_palette("husl")
         
         # Start monitoring

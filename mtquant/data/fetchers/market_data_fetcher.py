@@ -505,3 +505,4 @@ class MarketDataFetcher:
         return self._running
 
 
+
